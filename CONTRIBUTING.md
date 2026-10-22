@@ -41,6 +41,23 @@ PYTHONPATH=src python -m unittest discover -s tests -v
 Report precisely which checks ran and which were blocked. Unit tests mock filesystem
 I/O and recognition; they do not establish transcription accuracy or ffmpeg support.
 
+## Releasing
+
+To publish a new release to PyPI and GitHub:
+
+1. Update the version number in both `pyproject.toml` (`project.version`) and `src/altyazi_tr/__init__.py` (`__version__`).
+2. Update `CHANGELOG.md`: move the current `[Unreleased]` changes into a new version section with the release date, and update comparison links.
+3. Commit the version bump:
+   ```sh
+   git commit -m "chore: release vX.Y.Z"
+   ```
+4. Create and push a Git tag:
+   ```sh
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+5. GitHub Actions triggers `.github/workflows/release.yml` on tag push (`v*`). The workflow builds the distribution packages, validates metadata via `twine check`, publishes to PyPI via trusted publishing (`pypa/gh-action-pypi-publish`), and creates a GitHub Release with the built dist files.
+
 ## Türkçe
 
 Büyük davranış değişikliklerini önce bir issue ile tartışalım. Değişiklikleri küçük
@@ -56,3 +73,20 @@ yerel model ve yapay konuşma dosyasına yönlendirin. Varsayılan test çalış
 test seçilmez. Fixture dosyalarını PR'a eklemeyin. Hangi kontrollerin çalıştığını,
 hangilerinin engellendiğini açıkça belirtin. Birim testleri gerçek tanıma başarısını
 ve ffmpeg desteğini doğrulamaz.
+
+## Sürüm Yayınlama
+
+Yeni bir sürümü PyPI ve GitHub üzerinde yayınlamak için:
+
+1. Hem `pyproject.toml` (`project.version`) hem de `src/altyazi_tr/__init__.py` (`__version__`) dosyasındaki sürüm numarasını güncelleyin.
+2. `CHANGELOG.md` dosyasını güncelleyin: `[Unreleased]` altındaki maddeleri yeni sürüm başlığına taşıyıp yayın tarihini ve karşılaştırma bağlantılarını ekleyin.
+3. Sürüm commit'ini oluşturun:
+   ```sh
+   git commit -m "chore: release vX.Y.Z"
+   ```
+4. Sürüm etiketini oluşturup gönderin:
+   ```sh
+   git tag -a vX.Y.Z -m "Release vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+5. `v*` etiketi GitHub'a ulaştığında `.github/workflows/release.yml` otomatik çalışır; sdist ve wheel paketlerini derler, `twine check` ile doğrular, güvenilir yayınlama (trusted publishing) yoluyla PyPI'ye gönderir ve GitHub üzerinde paketleri ekleyerek yeni bir Release oluşturur.
