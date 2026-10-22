@@ -46,8 +46,11 @@ class WriterTests(unittest.TestCase):
         self.assertIn(",8,60,60,320,1", ass([self.cue], style=Style(position="upper")))
 
     def test_karaoke_active_word_and_silent_gaps(self) -> None:
-        events = [line for line in ass([self.cue], karaoke=True).splitlines()
-                  if line.startswith("Dialogue:")]
+        events = [
+            line
+            for line in ass([self.cue], karaoke=True).splitlines()
+            if line.startswith("Dialogue:")
+        ]
         self.assertEqual(len(events), 4)
         self.assertIn(r"{\1c&H00FFFF&\1a&H00&}iyi{\rDefault}", events[0])
         self.assertNotIn(r"\1c", events[1])
@@ -65,11 +68,19 @@ class StyleTests(unittest.TestCase):
 
     def test_invalid(self) -> None:
         for kwargs in [
-            {"font": ""}, {"font": "bad,name"}, {"font": "bad\nname"},
-            {"font": "bad\\name"}, {"font_size": 0}, {"font_size": True},
-            {"outline": 21}, {"margin_v": -1}, {"bold": "yes"},
-            {"primary_color": "red"}, {"highlight_color": "&HFFFFFF"},
-            {"outline_color": 1}, {"position": "left"},
+            {"font": ""},
+            {"font": "bad,name"},
+            {"font": "bad\nname"},
+            {"font": "bad\\name"},
+            {"font_size": 0},
+            {"font_size": True},
+            {"outline": 21},
+            {"margin_v": -1},
+            {"bold": "yes"},
+            {"primary_color": "red"},
+            {"highlight_color": "&HFFFFFF"},
+            {"outline_color": 1},
+            {"position": "left"},
         ]:
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 Style(**kwargs)

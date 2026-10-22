@@ -80,8 +80,10 @@ def transcribe(
                 total = sum(map(len, tokens))
                 cursor = word.start
                 for index, token in enumerate(tokens):
-                    end = word.end if index == len(tokens) - 1 else (
-                        cursor + (word.end - word.start) * len(token) / total
+                    end = (
+                        word.end
+                        if index == len(tokens) - 1
+                        else (cursor + (word.end - word.start) * len(token) / total)
                     )
                     start = max(cursor, words[-1].end if words else 0.0)
                     if end > start:

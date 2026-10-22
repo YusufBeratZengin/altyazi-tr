@@ -20,8 +20,10 @@ class Style:
     margin_v: int = 320
 
     def __post_init__(self) -> None:
-        if not isinstance(self.font, str) or not self.font.strip() or any(
-            char in self.font for char in ",\n\r{}\\"
+        if (
+            not isinstance(self.font, str)
+            or not self.font.strip()
+            or any(char in self.font for char in ",\n\r{}\\")
         ):
             raise ValueError("Font must be a non-empty name without ASS separators.")
         for name, low, high in (("font_size", 1, 300), ("outline", 0, 20), ("margin_v", 0, 900)):

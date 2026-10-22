@@ -13,12 +13,16 @@ class TranscribeTests(unittest.TestCase):
         self.resolve = MagicMock(return_value="cached-model")
         self.engine = self.factory.return_value
         self.info = SimpleNamespace(language="tr", duration=4)
-        self.segments = [SimpleNamespace(words=[
-            SimpleNamespace(start=0, end=1, word=" iyi ışık", probability=0.4),
-            SimpleNamespace(start=0.9, end=2, word=" var", probability=0.9),
-            SimpleNamespace(start=2, end=2, word=" bozuk", probability=0.9),
-            SimpleNamespace(start=2, end=3, word="   ", probability=0.9),
-        ])]
+        self.segments = [
+            SimpleNamespace(
+                words=[
+                    SimpleNamespace(start=0, end=1, word=" iyi ışık", probability=0.4),
+                    SimpleNamespace(start=0.9, end=2, word=" var", probability=0.9),
+                    SimpleNamespace(start=2, end=2, word=" bozuk", probability=0.9),
+                    SimpleNamespace(start=2, end=3, word="   ", probability=0.9),
+                ]
+            )
+        ]
         self.engine.transcribe.return_value = (iter(self.segments), self.info)
         modules = {
             "faster_whisper": SimpleNamespace(WhisperModel=self.factory),
@@ -55,8 +59,14 @@ class TranscribeTests(unittest.TestCase):
 
     def test_explicit_options(self) -> None:
         with patch.object(Path, "is_dir", return_value=True):
-            transcribe(Path("invented.wav"), model="tiny-model", device="cpu",
-                       compute_type="float32", language="en", vad=False)
+            transcribe(
+                Path("invented.wav"),
+                model="tiny-model",
+                device="cpu",
+                compute_type="float32",
+                language="en",
+                vad=False,
+            )
         self.factory.assert_called_once_with(
             "tiny-model", device="cpu", compute_type="float32", local_files_only=True
         )
@@ -85,7 +95,8 @@ class TranscribeTests(unittest.TestCase):
 
         self.count.return_value = 1
         self.engine.transcribe.side_effect = [
-            (broken(), self.info), (iter(self.segments), self.info)
+            (broken(), self.info),
+            (iter(self.segments), self.info),
         ]
         self.assertEqual(transcribe(Path("invented.wav")).device, "cpu")
 
@@ -113,8 +124,12 @@ class TranscribeTests(unittest.TestCase):
         self.factory.assert_not_called()
 
     def test_invalid_options(self) -> None:
-        for kwargs in ({"device": "invalid"}, {"model": ""}, {"language": ""},
-                       {"compute_type": ""}):
+        for kwargs in (
+            {"device": "invalid"},
+            {"model": ""},
+            {"language": ""},
+            {"compute_type": ""},
+        ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 transcribe(Path("invented.wav"), **kwargs)
         self.factory.assert_not_called()

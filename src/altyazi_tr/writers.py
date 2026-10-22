@@ -26,8 +26,8 @@ def _plain(text: str) -> str:
 
 def srt(cues: Sequence[Cue]) -> str:
     return "".join(
-        f"{i}\n{_stamp(c.start, comma=True)} --> {_stamp(c.end, comma=True)}\n"
-        f"{_plain(c.text)}\n\n" for i, c in enumerate(cues, 1)
+        f"{i}\n{_stamp(c.start, comma=True)} --> {_stamp(c.end, comma=True)}\n{_plain(c.text)}\n\n"
+        for i, c in enumerate(cues, 1)
     )
 
 
@@ -73,9 +73,10 @@ def ass(cues: Sequence[Cue], *, style: Style | None = None, karaoke: bool = Fals
     )
     events = []
     for cue in cues:
-        cuts = sorted({cue.start, cue.end} | (
-            {time for w in cue.words for time in (w.start, w.end)} if karaoke else set()
-        ))
+        cuts = sorted(
+            {cue.start, cue.end}
+            | ({time for w in cue.words for time in (w.start, w.end)} if karaoke else set())
+        )
         for start, end in zip(cuts, cuts[1:], strict=False):
             if _stamp(start, ass=True) == _stamp(end, ass=True):
                 continue

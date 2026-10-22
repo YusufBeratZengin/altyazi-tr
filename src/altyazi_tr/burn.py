@@ -35,10 +35,31 @@ def burn(source: Path, subtitles: Path, output: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="altyazi-tr-") as folder:
         shutil.copyfile(subtitles, Path(folder) / "captions.ass")
         command = [
-            executable, "-nostdin", "-n", "-hide_banner", "-loglevel", "error",
-            "-i", str(source), "-map", "0:v:0", "-map", "0:a?",
-            "-vf", "ass=captions.ass", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-movflags", "+faststart", str(output),
+            executable,
+            "-nostdin",
+            "-n",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            str(source),
+            "-map",
+            "0:v:0",
+            "-map",
+            "0:a?",
+            "-vf",
+            "ass=captions.ass",
+            "-c:v",
+            "libx264",
+            "-crf",
+            "20",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-movflags",
+            "+faststart",
+            str(output),
         ]
         try:
             subprocess.run(command, cwd=folder, check=True, capture_output=True, text=True)

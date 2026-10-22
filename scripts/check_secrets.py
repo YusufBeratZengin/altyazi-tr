@@ -31,7 +31,8 @@ def suspicious(path: str, content: bytes) -> bool:
 def main() -> int:
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"],
-        check=True, capture_output=True,
+        check=True,
+        capture_output=True,
     )
     flagged = []
     for raw in result.stdout.split(b"\0"):

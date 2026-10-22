@@ -115,10 +115,15 @@ def layout(
         )
         if boundary:
             # Keep a trailing conjunction with the next word if both fit together.
-            carry = current[-1:] if (
-                len(current) > 1 and _joiner(current[-1])
-                and word.start - current[-1].end <= config.pause_threshold
-            ) else ()
+            carry = (
+                current[-1:]
+                if (
+                    len(current) > 1
+                    and _joiner(current[-1])
+                    and word.start - current[-1].end <= config.pause_threshold
+                )
+                else ()
+            )
             if carry and _wrap(carry + (word,), config) is not None:
                 groups.append(current[:-1])
                 current = carry
@@ -132,11 +137,11 @@ def layout(
     # Merge when either neighbour is too brief, but never across a long pause.
     index = 0
     while index + 1 < len(cues):
-        left, right = cues[index:index + 2]
+        left, right = cues[index : index + 2]
         lines = _wrap(left.words + right.words, config)
         short = any(c.end - c.start < _required(c, config) for c in (left, right))
         if short and lines and right.start - left.words[-1].end <= config.pause_threshold:
-            cues[index:index + 2] = [Cue(left.start, right.end, lines)]
+            cues[index : index + 2] = [Cue(left.start, right.end, lines)]
             index = max(0, index - 1)
         else:
             index += 1

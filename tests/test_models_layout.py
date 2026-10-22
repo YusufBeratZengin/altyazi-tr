@@ -22,10 +22,17 @@ class ModelTests(unittest.TestCase):
 
     def test_word_invalid(self) -> None:
         for args in [
-            (-1, 1, "bir", 1), (1, 1, "bir", 1), (2, 1, "bir", 1),
-            (0, math.inf, "bir", 1), (math.nan, 1, "bir", 1),
-            (0, 1, "", 1), (0, 1, "iki kelime", 1), (0, 1, "satır\n", 1),
-            (0, 1, "bir", -0.1), (0, 1, "bir", 1.1), (0, 1, "bir", math.nan),
+            (-1, 1, "bir", 1),
+            (1, 1, "bir", 1),
+            (2, 1, "bir", 1),
+            (0, math.inf, "bir", 1),
+            (math.nan, 1, "bir", 1),
+            (0, 1, "", 1),
+            (0, 1, "iki kelime", 1),
+            (0, 1, "satır\n", 1),
+            (0, 1, "bir", -0.1),
+            (0, 1, "bir", 1.1),
+            (0, 1, "bir", math.nan),
         ]:
             with self.subTest(args=args), self.assertRaises(ValueError):
                 Word(*args)
@@ -38,9 +45,15 @@ class ModelTests(unittest.TestCase):
 
     def test_cue_invalid(self) -> None:
         word = Word(1, 2, "ışık")
-        for args in [(0, 2, ()), (0, 2, ((),)), (1.5, 2, ((word,),)),
-                     (0, 1.5, ((word,),)), (-1, 2, ((word,),)),
-                     (0, math.inf, ((word,),)), (0, 2, ((word, word),))]:
+        for args in [
+            (0, 2, ()),
+            (0, 2, ((),)),
+            (1.5, 2, ((word,),)),
+            (0, 1.5, ((word,),)),
+            (-1, 2, ((word,),)),
+            (0, math.inf, ((word,),)),
+            (0, 2, ((word, word),)),
+        ]:
             with self.subTest(args=args), self.assertRaises(ValueError):
                 Cue(*args)
 
@@ -51,11 +64,19 @@ class LayoutTests(unittest.TestCase):
 
     def test_config_invalid(self) -> None:
         for kwargs in [
-            {"max_chars": 0}, {"max_chars": True}, {"max_chars": 1.5},
-            {"max_lines": 0}, {"max_lines": 5}, {"max_lines": True},
-            {"pause_threshold": 0}, {"pause_threshold": math.inf},
-            {"min_duration": -1}, {"min_duration": math.nan},
-            {"max_cps": 0}, {"max_cps": math.inf}, {"mode": "invalid"},
+            {"max_chars": 0},
+            {"max_chars": True},
+            {"max_chars": 1.5},
+            {"max_lines": 0},
+            {"max_lines": 5},
+            {"max_lines": True},
+            {"pause_threshold": 0},
+            {"pause_threshold": math.inf},
+            {"min_duration": -1},
+            {"min_duration": math.nan},
+            {"max_cps": 0},
+            {"max_cps": math.inf},
+            {"mode": "invalid"},
         ]:
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 LayoutConfig(**kwargs)
@@ -66,14 +87,14 @@ class LayoutTests(unittest.TestCase):
 
     def test_order_duration_validation(self) -> None:
         words = phrase("bir gün")
-        for items, duration in [(words[::-1], None), (words, 0),
-                                (words, math.nan), ((), -1)]:
+        for items, duration in [(words[::-1], None), (words, 0), (words, math.nan), ((), -1)]:
             with self.subTest(duration=duration), self.assertRaises(ValueError):
                 layout(items, duration=duration)
 
     def test_turkish_upper(self) -> None:
-        self.assertEqual(turkish_upper("iyi ışık için, küçük bir öykü."),
-                         "İYİ IŞIK İÇİN, KÜÇÜK BİR ÖYKÜ.")
+        self.assertEqual(
+            turkish_upper("iyi ışık için, küçük bir öykü."), "İYİ IŞIK İÇİN, KÜÇÜK BİR ÖYKÜ."
+        )
         original = phrase("iyi ışık")
         cues = layout(original, LayoutConfig(upper=True))
         self.assertEqual([w.text for c in cues for w in c.words], ["İYİ", "IŞIK"])
@@ -112,8 +133,9 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(cues[1].words, words[2:])
 
     def test_punctuation_boundary(self) -> None:
-        cues = layout(phrase("Işık değişti. Renk kaldı.", step=1),
-                      LayoutConfig(min_duration=0.1, max_cps=100))
+        cues = layout(
+            phrase("Işık değişti. Renk kaldı.", step=1), LayoutConfig(min_duration=0.1, max_cps=100)
+        )
         self.assertEqual(len(cues), 2)
         self.assertTrue(cues[0].text.endswith("değişti."))
 
@@ -132,8 +154,9 @@ class LayoutTests(unittest.TestCase):
         self.assertEqual(layout(words)[0].end, 0.2)
 
     def test_reading_speed_drives_duration(self) -> None:
-        cue = layout((Word(0, 0.1, "değişiyor"),),
-                     LayoutConfig(min_duration=0.1, max_cps=3), duration=5)[0]
+        cue = layout(
+            (Word(0, 0.1, "değişiyor"),), LayoutConfig(min_duration=0.1, max_cps=3), duration=5
+        )[0]
         self.assertEqual(cue.end, 3)
 
     def test_impossible_constraints_reported(self) -> None:
@@ -152,8 +175,9 @@ class LayoutTests(unittest.TestCase):
     def test_many_generated_phrases_preserve_words_and_limits(self) -> None:
         for width in (8, 12, 18, 30):
             for count in range(1, 40):
-                words = tuple(replace(Word(i * 0.4, i * 0.4 + 0.3, "ışık"), prob=0.7)
-                              for i in range(count))
+                words = tuple(
+                    replace(Word(i * 0.4, i * 0.4 + 0.3, "ışık"), prob=0.7) for i in range(count)
+                )
                 cues = layout(words, LayoutConfig(max_chars=width), duration=count * 0.4)
                 self.assertEqual(tuple(w for c in cues for w in c.words), words)
                 self.assertTrue(all(len(c.lines) <= 2 for c in cues))

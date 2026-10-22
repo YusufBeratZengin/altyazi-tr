@@ -52,9 +52,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not args.input.is_file():
             raise ValueError("Input must be an existing local media file.")
         config = LayoutConfig(
-            max_chars=args.max_chars, max_lines=args.max_lines,
+            max_chars=args.max_chars,
+            max_lines=args.max_lines,
             pause_threshold=args.pause_threshold,
-            min_duration=args.min_duration, max_cps=args.max_cps, mode=args.mode, upper=args.upper,
+            min_duration=args.min_duration,
+            max_cps=args.max_cps,
+            mode=args.mode,
+            upper=args.upper,
             # Dotted/dotless I mapping is wrong outside Turkic languages.
             turkish_case=args.lang.strip().lower().split("-")[0] in ("tr", "az"),
         )
@@ -67,9 +71,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         stem = (
             target.with_suffix("") if target.suffix.lower() in (".srt", ".vtt", ".ass") else target
         )
-        formats: tuple[str, ...] = (
-            ("srt", "vtt", "ass") if args.format == "all" else (args.format,)
-        )
+        formats: tuple[str, ...] = ("srt", "vtt", "ass") if args.format == "all" else (args.format,)
         if args.burn and "ass" not in formats:
             formats += ("ass",)
         outputs = {fmt: Path(str(stem) + "." + fmt) for fmt in formats}
@@ -86,24 +88,34 @@ def main(argv: Sequence[str] | None = None) -> int:
         if any(p.exists() or p.resolve() in protected for p in planned):
             raise ValueError("Output files must be new and distinct from input and style files.")
         transcript = transcribe(
-            args.input, model=args.model, device=args.device, compute_type=args.compute_type,
-            language=args.lang, vad=not args.no_vad,
+            args.input,
+            model=args.model,
+            device=args.device,
+            compute_type=args.compute_type,
+            language=args.lang,
+            vad=not args.no_vad,
         )
         cues = layout(transcript.words, config, duration=transcript.duration)
         warnings = layout_warnings(cues, config)
         for fmt, path in outputs.items():
             text = (
-                writers.ass(cues, style=style, karaoke=args.mode == "words") if fmt == "ass"
-                else writers.srt(cues) if fmt == "srt" else writers.vtt(cues)
+                writers.ass(cues, style=style, karaoke=args.mode == "words")
+                if fmt == "ass"
+                else writers.srt(cues)
+                if fmt == "srt"
+                else writers.vtt(cues)
             )
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("x", encoding="utf-8", newline="\n") as handle:
                 handle.write(text)
         if args.report:
             report = {
-                "version": __version__, "language": transcript.language,
-                "duration": transcript.duration, "device": transcript.device,
-                "compute_type": transcript.compute_type, "cue_count": len(cues),
+                "version": __version__,
+                "language": transcript.language,
+                "duration": transcript.duration,
+                "device": transcript.device,
+                "compute_type": transcript.compute_type,
+                "cue_count": len(cues),
                 "confidence_threshold": args.confidence,
                 "low_confidence_words": [
                     asdict(w) for w in transcript.words if w.prob < args.confidence
