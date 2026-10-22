@@ -110,6 +110,39 @@ ayrı tutmak için `--min-duration 0.01 --max-cps 10000` kullanabilirsiniz.
 
 Gerçek GIF veya ekran görüntüsü için [docs klasöründe](docs/README.md) yer ayrıldı.
 
+## Örnek çıktılar
+
+Yapay kelime zamanlamalarından deterministik olarak üretilen örnek dosyalar [docs/examples/](docs/examples/) dizinindedir.
+
+Kısaltılmış SRT örneği ([`sample.srt`](docs/examples/sample.srt)):
+
+```srt
+1
+00:00:00,000 --> 00:00:02,050
+BUGÜN DİKEY
+VİDEOLAR İÇİN
+
+2
+00:00:02,120 --> 00:00:04,100
+ALTYAZI
+HAZIRLIYORUZ ÇÜNKÜ
+
+3
+00:00:04,180 --> 00:00:07,100
+İYİ IŞIK VE NET
+SES ÇOK ÖNEMLİ.
+```
+
+Karaoke ASS örneği ([`sample.ass`](docs/examples/sample.ass)); konuşulan kelimeyi vurgularken duraklamalarda vurguyu kaldırır:
+
+```ass
+Dialogue: 0,0:00:00.00,0:00:00.42,Default,,0,0,0,,{\1c&H00FFFF&\1a&H00&}BUGÜN{\rDefault} DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.42,0:00:00.48,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.48,0:00:00.95,Default,,0,0,0,,BUGÜN {\1c&H00FFFF&\1a&H00&}DİKEY{\rDefault}\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.95,0:00:01.02,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:01.02,0:00:01.60,Default,,0,0,0,,BUGÜN DİKEY\N{\1c&H00FFFF&\1a&H00&}VİDEOLAR{\rDefault} İÇİN
+```
+
 ## Yerleşim ve görünüm
 
 Varsayılanlar: satır başına 18 karakter, ekranda en fazla 2 satır, 0,6 saniye

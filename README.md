@@ -104,6 +104,39 @@ to minimize merging for strictly word-by-word plain subtitles.
 
 The [docs folder](docs/README.md) reserves space for a real GIF or screenshot.
 
+## Example output
+
+Deterministic sample files generated from synthetic word timings are located in [docs/examples/](docs/examples/).
+
+Trimmed SRT excerpt ([`sample.srt`](docs/examples/sample.srt)):
+
+```srt
+1
+00:00:00,000 --> 00:00:02,050
+BUGÜN DİKEY
+VİDEOLAR İÇİN
+
+2
+00:00:02,120 --> 00:00:04,100
+ALTYAZI
+HAZIRLIYORUZ ÇÜNKÜ
+
+3
+00:00:04,180 --> 00:00:07,100
+İYİ IŞIK VE NET
+SES ÇOK ÖNEMLİ.
+```
+
+Karaoke ASS excerpt ([`sample.ass`](docs/examples/sample.ass)), highlighting each spoken word with silence gaps in between:
+
+```ass
+Dialogue: 0,0:00:00.00,0:00:00.42,Default,,0,0,0,,{\1c&H00FFFF&\1a&H00&}BUGÜN{\rDefault} DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.42,0:00:00.48,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.48,0:00:00.95,Default,,0,0,0,,BUGÜN {\1c&H00FFFF&\1a&H00&}DİKEY{\rDefault}\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:00.95,0:00:01.02,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇİN
+Dialogue: 0,0:00:01.02,0:00:01.60,Default,,0,0,0,,BUGÜN DİKEY\N{\1c&H00FFFF&\1a&H00&}VİDEOLAR{\rDefault} İÇİN
+```
+
 ## Layout and styling
 
 Defaults: 18 characters per line, at most 2 lines, 0.6-second pause threshold,
