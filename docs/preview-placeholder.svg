@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 270 480" role="img" aria-labelledby="title desc">
+  <title id="title">Subtitle preview placeholder / Altyazı önizleme alanı</title>
+  <desc id="desc">Illustrative vertical frame, not an application screenshot. Gerçek ekran görüntüsü değildir.</desc>
+  <rect width="270" height="480" rx="12" fill="#1c2533"/>
+  <path d="M0 300L95 180l65 80 110-140v360H0z" fill="#34465d"/>
+  <g font-family="sans-serif" text-anchor="middle" fill="white">
+    <text x="135" y="42" font-size="12">Preview placeholder</text>
+    <text x="135" y="61" font-size="12">Önizleme alanı</text>
+    <text x="135" y="365" font-size="21" font-weight="bold" stroke="#000" stroke-width="3" paint-order="stroke">İYİ <tspan fill="#ffff00">IŞIK</tspan> İÇİN</text>
+    <text x="135" y="392" font-size="21" font-weight="bold" stroke="#000" stroke-width="3" paint-order="stroke">KÜÇÜK BİR ÖYKÜ</text>
+  </g>
+</svg>
