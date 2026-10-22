@@ -184,6 +184,53 @@ bakın. Alanlar: `font`, `font_size` (1–300), `primary_color`, `highlight_colo
 Renkler ASS `&HAABBGGRR` biçimindedir: saydamlık, mavi, yeşil, kırmızı. Bilinmeyen
 alanlar reddedilir.
 
+## Çıkış kodları
+
+| Çıkış kodu | Kategori | Açıklama |
+| :---: | --- | --- |
+| `0` | Başarılı | Altyazı blokları başarıyla oluşturuldu ve yazıldı. |
+| `1` | İşlem hatası | Dosyanın bulunamaması, boş/okunamayan ses, yerelde olmayan model, dosya çakışması veya geçersiz ASS stili gibi çalışma zamanı hataları. |
+| `2` | Argüman hatası | Geçersiz komut satırı argümanları, tanınmayan seçenekler veya eksik zorunlu parametreler. |
+
+## Rapor şeması
+
+`--report json` seçeneği verildiğinde, altyazi-tr işlem ayrıntılarını ve düzen uyarılarını içeren `<ad>.report.json` dosyasını oluşturur (örnek: [docs/examples/report.json](docs/examples/report.json)):
+
+| Alan | Tür | Açıklama |
+| --- | --- | --- |
+| `version` | metin | Raporu üreten paket sürümü. |
+| `language` | metin | Tanıma işleminde kullanılan dil kodu. |
+| `duration` | ondalık sayı | Medya dosyasının saniye cinsinden süresi. |
+| `device` | metin | Çıkarımda kullanılan donanım (`cpu`, `cuda` veya `none`). |
+| `compute_type` | metin | Çıkarım sayı duyarlılığı (`int8`, `float16` veya `none`). |
+| `cue_count` | tam sayı | Üretilen toplam altyazı bloğu sayısı. |
+| `confidence_threshold` | ondalık sayı | Düşük güvenli kelimeler için eşik değeri. |
+| `low_confidence_words` | dizi | Güven puanı eşiğin altında kalan `{start, end, text, prob}` kelime listesi. |
+| `layout_warnings` | dizi | Yerleşim hedeflerini aşan altyazı blokları için `{cue, codes}` uyarıları (`long_word`, `short_duration`, `reading_speed`, `trailing_conjunction`). |
+
+Örnek JSON:
+
+```json
+{
+  "version": "0.1.0",
+  "language": "tr",
+  "duration": 7.2,
+  "device": "cpu",
+  "compute_type": "int8",
+  "cue_count": 3,
+  "confidence_threshold": 0.6,
+  "low_confidence_words": [
+    {
+      "start": 3.68,
+      "end": 4.1,
+      "text": "çünkü",
+      "prob": 0.55
+    }
+  ],
+  "layout_warnings": []
+}
+```
+
 ## API özeti
 
 ```python

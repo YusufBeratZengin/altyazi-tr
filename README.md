@@ -175,6 +175,53 @@ fields are `font`, `font_size` (1–300), `primary_color`, `highlight_color`,
 `outline_color`, `outline` (0–20), `bold`, `position`, and `margin_v` (0–900).
 Colors use ASS `&HAABBGGRR` (alpha, blue, green, red); unknown fields are rejected.
 
+## Exit codes
+
+| Exit code | Category | Description |
+| :---: | --- | --- |
+| `0` | Success | Subtitle cues generated and written successfully. |
+| `1` | Processing error | Runtime failure such as missing input file, empty/unreadable audio, un-cached offline model, output file collision, or invalid ASS style. |
+| `2` | Argument error | Invalid command-line arguments, unsupported options, or missing required parameters. |
+
+## Report schema
+
+When running with `--report json`, altyazi-tr generates `<stem>.report.json` (see [docs/examples/report.json](docs/examples/report.json)) documenting transcription parameters and layout warnings:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `version` | string | Package version used to produce the report. |
+| `language` | string | Language code used during transcription. |
+| `duration` | float | Media duration in seconds (capped to last word end). |
+| `device` | string | Device used for inference (`cpu`, `cuda`, or `none`). |
+| `compute_type` | string | Precision used for inference (`int8`, `float16`, or `none`). |
+| `cue_count` | integer | Total number of subtitle cues produced. |
+| `confidence_threshold` | float | Threshold used to flag low-confidence words. |
+| `low_confidence_words` | array | List of `{start, end, text, prob}` tokens where probability is below the threshold. |
+| `layout_warnings` | array | List of `{cue, codes}` items where cues exceed layout constraints (`long_word`, `short_duration`, `reading_speed`, `trailing_conjunction`). |
+
+Example JSON:
+
+```json
+{
+  "version": "0.1.0",
+  "language": "tr",
+  "duration": 7.2,
+  "device": "cpu",
+  "compute_type": "int8",
+  "cue_count": 3,
+  "confidence_threshold": 0.6,
+  "low_confidence_words": [
+    {
+      "start": 3.68,
+      "end": 4.1,
+      "text": "çünkü",
+      "prob": 0.55
+    }
+  ],
+  "layout_warnings": []
+}
+```
+
 ## API summary
 
 ```python

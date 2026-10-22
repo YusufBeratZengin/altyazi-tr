@@ -79,3 +79,13 @@ class CLIErrorsTests(unittest.TestCase):
             err = self.stderr.getvalue()
             self.assertIn("Language 'klingon' is not supported", err)
             self.assertNotIn("Traceback", err)
+
+    def test_exit_codes(self) -> None:
+        # Exit code 2: argument parsing error
+        with self.assertRaises(SystemExit) as exc:
+            main([])
+        self.assertEqual(exc.exception.code, 2)
+
+        with self.assertRaises(SystemExit) as exc:
+            main(["invented.mp4", "--format", "unsupported_fmt"])
+        self.assertEqual(exc.exception.code, 2)
