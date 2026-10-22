@@ -12,54 +12,62 @@ from altyazi_tr.transcribe import Transcript
 
 class CLIWordsTests(unittest.TestCase):
     def test_words_json_without_importing_faster_whisper(self) -> None:
-        # Verify that faster_whisper has not been imported yet
-        self.assertNotIn("faster_whisper", sys.modules)
+        # Clear any faster_whisper modules that might have been imported by prior test files
+        saved_modules = {}
+        for mod in list(sys.modules):
+            if mod == "faster_whisper" or mod.startswith("faster_whisper."):
+                saved_modules[mod] = sys.modules.pop(mod)
 
-        words_data = [
-            {"start": 0.0, "end": 0.42, "text": "Bugün", "prob": 0.98},
-            {"start": 0.48, "end": 0.95, "text": "dikey", "prob": 0.97},
-            {"start": 1.02, "end": 1.60, "text": "videolar", "prob": 0.95},
-        ]
-
-        with tempfile.TemporaryDirectory(prefix="altyazi-words-") as folder:
-            words_file = Path(folder) / "input_words.json"
-            words_file.write_text(json.dumps(words_data), encoding="utf-8")
-            out_prefix = Path(folder) / "out_captions"
-
-            # Run CLI with --words-json
-            code = main(
-                [
-                    "--words-json",
-                    str(words_file),
-                    "-o",
-                    str(out_prefix),
-                    "--format",
-                    "all",
-                    "--report",
-                    "json",
-                ]
-            )
-            self.assertEqual(code, 0)
-
-            # Confirm output files exist
-            srt_path = Path(folder) / "out_captions.srt"
-            vtt_path = Path(folder) / "out_captions.vtt"
-            ass_path = Path(folder) / "out_captions.ass"
-            rep_path = Path(folder) / "out_captions.report.json"
-            self.assertTrue(srt_path.is_file())
-            self.assertTrue(vtt_path.is_file())
-            self.assertTrue(ass_path.is_file())
-            self.assertTrue(rep_path.is_file())
-
-            srt_text = srt_path.read_text(encoding="utf-8")
-            self.assertIn("Bugün dikey", srt_text)
-
-            report = json.loads(rep_path.read_text(encoding="utf-8"))
-            self.assertEqual(report["cue_count"], 1)
-            self.assertEqual(report["device"], "none")
-
-            # CRITICAL ACCEPTANCE CHECK: faster_whisper must NOT be loaded into sys.modules
+        try:
             self.assertNotIn("faster_whisper", sys.modules)
+
+            words_data = [
+                {"start": 0.0, "end": 0.42, "text": "Bugün", "prob": 0.98},
+                {"start": 0.48, "end": 0.95, "text": "dikey", "prob": 0.97},
+                {"start": 1.02, "end": 1.60, "text": "videolar", "prob": 0.95},
+            ]
+
+            with tempfile.TemporaryDirectory(prefix="altyazi-words-") as folder:
+                words_file = Path(folder) / "input_words.json"
+                words_file.write_text(json.dumps(words_data), encoding="utf-8")
+                out_prefix = Path(folder) / "out_captions"
+
+                # Run CLI with --words-json
+                code = main(
+                    [
+                        "--words-json",
+                        str(words_file),
+                        "-o",
+                        str(out_prefix),
+                        "--format",
+                        "all",
+                        "--report",
+                        "json",
+                    ]
+                )
+                self.assertEqual(code, 0)
+
+                # Confirm output files exist
+                srt_path = Path(folder) / "out_captions.srt"
+                vtt_path = Path(folder) / "out_captions.vtt"
+                ass_path = Path(folder) / "out_captions.ass"
+                rep_path = Path(folder) / "out_captions.report.json"
+                self.assertTrue(srt_path.is_file())
+                self.assertTrue(vtt_path.is_file())
+                self.assertTrue(ass_path.is_file())
+                self.assertTrue(rep_path.is_file())
+
+                srt_text = srt_path.read_text(encoding="utf-8")
+                self.assertIn("Bugün dikey", srt_text)
+
+                report = json.loads(rep_path.read_text(encoding="utf-8"))
+                self.assertEqual(report["cue_count"], 1)
+                self.assertEqual(report["device"], "none")
+
+                # CRITICAL ACCEPTANCE CHECK: faster_whisper must NOT be loaded into sys.modules
+                self.assertNotIn("faster_whisper", sys.modules)
+        finally:
+            sys.modules.update(saved_modules)
 
     def test_save_words_and_reload(self) -> None:
         transcript = Transcript(
