@@ -234,3 +234,27 @@ class BurnTests(unittest.TestCase):
             run.side_effect = subprocess.CalledProcessError(1, args)
             with self.assertRaisesRegex(RuntimeError, "libass"):
                 burn(source, Path("in.ass"), Path("other.mp4"))
+
+    def test_windows_paths_with_drive_letters_spaces_and_apostrophes(self) -> None:
+        folder = MagicMock()
+        folder.__enter__.return_value = "temporary-workspace"
+        with (
+            patch.object(Path, "is_file", return_value=True),
+            patch.object(Path, "exists", return_value=False),
+            patch.object(Path, "mkdir"),
+            patch("altyazi_tr.burn.find_ffmpeg", return_value="ffmpeg"),
+            patch("altyazi_tr.burn.tempfile.TemporaryDirectory", return_value=folder),
+            patch("altyazi_tr.burn.shutil.copyfile") as copy,
+            patch("altyazi_tr.burn.subprocess.run") as run,
+        ):
+            source = Path(r"C:\Users\Test User\o'clip\video.mp4")
+            subtitles = Path(r"C:\Users\Test User\o'clip\a.ass")
+            output = Path(r"C:\Users\Test User\o'clip\out.mp4")
+            burn(source, subtitles, output)
+
+            copy.assert_called_once_with(
+                subtitles.resolve(), Path("temporary-workspace/captions.ass")
+            )
+            args = run.call_args.args[0]
+            self.assertIn("ass=captions.ass", args)
+            self.assertEqual(run.call_args.kwargs["cwd"], "temporary-workspace")

@@ -30,8 +30,14 @@ def burn(source: Path, subtitles: Path, output: Path) -> None:
         raise ValueError("Burn output must be a new file distinct from the inputs.")
     executable = find_ffmpeg()
     output.parent.mkdir(parents=True, exist_ok=True)
-    # A fixed relative filter path avoids ffmpeg's multiple escaping layers,
-    # including Windows drive letters, apostrophes, commas and brackets.
+    # ffmpeg's libass filter (-vf "ass=filename") parses arguments through a custom
+    # filtergraph syntax where colons (:) delimit options, and backslashes (\), apostrophes ('),
+    # and brackets act as escape/delimiter characters. On Windows, paths like
+    # 'C:\Users\Test User\o\'clip\a.ass' contain drive letters with colons, backslashes, spaces,
+    # and quotes which notoriously break filtergraph parsing if passed directly into the filter.
+    # Copying subtitles into an isolated temporary folder as 'captions.ass' and running ffmpeg
+    # with cwd=folder guarantees that ffmpeg only sees a simple relative filename, immune to
+    # drive letters, apostrophes, spaces, and punctuation on both Windows and POSIX systems.
     with tempfile.TemporaryDirectory(prefix="altyazi-tr-") as folder:
         shutil.copyfile(subtitles, Path(folder) / "captions.ass")
         command = [
