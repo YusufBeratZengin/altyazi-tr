@@ -55,6 +55,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             max_chars=args.max_chars, max_lines=args.max_lines,
             pause_threshold=args.pause_threshold,
             min_duration=args.min_duration, max_cps=args.max_cps, mode=args.mode, upper=args.upper,
+            # Dotted/dotless I mapping is wrong outside Turkic languages.
+            turkish_case=args.lang.strip().lower().split("-")[0] in ("tr", "az"),
         )
         if not 0 <= args.confidence <= 1:
             raise ValueError("Confidence threshold must be between 0 and 1.")

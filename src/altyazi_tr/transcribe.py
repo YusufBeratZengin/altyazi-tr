@@ -87,7 +87,9 @@ def transcribe(
                     if end > start:
                         words.append(Word(start, end, token, word.probability))
                     cursor = end
-        return Transcript(tuple(words), info.language, info.duration, target, precision)
+        # Decoders can place the last word marginally past the reported media length.
+        duration = max(info.duration, words[-1].end) if words else info.duration
+        return Transcript(tuple(words), info.language, duration, target, precision)
 
     try:
         return run(selected, precision)

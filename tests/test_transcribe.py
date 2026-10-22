@@ -48,6 +48,11 @@ class TranscribeTests(unittest.TestCase):
         self.assertEqual(result.words[1].end, result.words[2].start)
         self.assertEqual(result.duration, 4)
 
+    def test_duration_covers_words_past_reported_media_length(self) -> None:
+        self.info.duration = 1.5  # decoder's last word ends at 2.0
+        result = transcribe(Path("invented.wav"))
+        self.assertGreaterEqual(result.duration, result.words[-1].end)
+
     def test_explicit_options(self) -> None:
         with patch.object(Path, "is_dir", return_value=True):
             transcribe(Path("invented.wav"), model="tiny-model", device="cpu",

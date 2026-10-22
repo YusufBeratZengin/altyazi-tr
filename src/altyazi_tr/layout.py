@@ -18,8 +18,11 @@ def turkish_upper(text: str) -> str:
 
 
 def _joiner(word: Word) -> bool:
+    """True for a conjunction that dangles: one followed by punctuation closes its clause."""
+    if word.text.endswith(tuple(_PUNCTUATION)):
+        return False
     lowered = word.text.translate(str.maketrans("İI", "iı")).lower()
-    return lowered.strip(_PUNCTUATION + "\"'“”") in _JOINERS
+    return lowered.strip("\"'“”") in _JOINERS
 
 
 @dataclass(frozen=True)
@@ -31,6 +34,7 @@ class LayoutConfig:
     max_cps: float = 18.0
     mode: Mode = "groups"
     upper: bool = False
+    turkish_case: bool = True
 
     def __post_init__(self) -> None:
         if type(self.max_chars) is not int or self.max_chars < 1:
@@ -43,6 +47,8 @@ class LayoutConfig:
                 raise ValueError(f"{name} must be finite and positive.")
         if self.mode not in ("words", "groups"):
             raise ValueError("mode must be words or groups.")
+        if type(self.turkish_case) is not bool:
+            raise ValueError("turkish_case must be a boolean.")
 
 
 def _wrap(words: tuple[Word, ...], config: LayoutConfig) -> tuple[tuple[Word, ...], ...] | None:
@@ -87,7 +93,8 @@ def layout(
     ``duration`` caps the final cue at the media end; absent it, no tail is invented.
     """
     config = config or LayoutConfig()
-    items = tuple(replace(w, text=turkish_upper(w.text)) if config.upper else w for w in words)
+    upper = turkish_upper if config.turkish_case else str.upper
+    items = tuple(replace(w, text=upper(w.text)) if config.upper else w for w in words)
     if any(a.end > b.start for a, b in zip(items, items[1:], strict=False)):
         raise ValueError("Words must be chronological and non-overlapping.")
     if duration is not None and (

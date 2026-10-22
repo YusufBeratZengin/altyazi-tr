@@ -37,7 +37,7 @@ def burn(source: Path, subtitles: Path, output: Path) -> None:
         command = [
             executable, "-nostdin", "-n", "-hide_banner", "-loglevel", "error",
             "-i", str(source), "-map", "0:v:0", "-map", "0:a?",
-            "-vf", "ass=captions.ass", "-c:v", "libx264", "-crf", "20",
+            "-vf", "ass=captions.ass", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-movflags", "+faststart", str(output),
         ]
         try:

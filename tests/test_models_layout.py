@@ -160,3 +160,26 @@ class LayoutTests(unittest.TestCase):
                 self.assertTrue(
                     all(len(line) <= width for c in cues for line in c.text.splitlines())
                 )
+
+
+class RegressionTests(unittest.TestCase):
+    def test_sentence_final_joiner_is_not_carried_into_next_cue(self) -> None:
+        # "de." closes a sentence; it must stay with its own sentence.
+        words = phrase("Dün akşam eve geldik. Sen de. Sonra çok güzel bir film izledik", step=1.0)
+        cues = layout(words, LayoutConfig())
+        texts = [c.text.replace("\n", " ") for c in cues]
+        self.assertTrue(any(t.endswith("Sen de.") for t in texts), texts)
+        self.assertFalse(any(t.startswith("de.") for t in texts), texts)
+
+    def test_sentence_final_joiner_has_no_trailing_conjunction_warning(self) -> None:
+        config = LayoutConfig()
+        words = phrase("Sen de. Sonra gittik", step=1.0)
+        cues = layout(words, config)
+        self.assertEqual(layout_warnings(cues, config), [])
+
+    def test_non_turkish_uppercase_keeps_plain_i(self) -> None:
+        words = phrase("it is fine")
+        cues = layout(words, LayoutConfig(upper=True, turkish_case=False))
+        self.assertEqual([w.text for c in cues for w in c.words], ["IT", "IS", "FINE"])
+        cues = layout(words, LayoutConfig(upper=True))
+        self.assertEqual([w.text for c in cues for w in c.words], ["İT", "İS", "FİNE"])

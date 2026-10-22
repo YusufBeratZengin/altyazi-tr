@@ -119,6 +119,13 @@ class CLITests(unittest.TestCase):
             main(["invented.mp4", "--format", "xml"])
         self.assertEqual(exc.exception.code, 2)
 
+    def test_upper_uses_turkish_case_only_for_turkish(self) -> None:
+        self.assertEqual(main(["invented.mp4", "--upper"]), 0)
+        self.assertIn("İYİ", self.files["invented.srt"].getvalue())
+        self.files.clear()
+        self.assertEqual(main(["invented.mp4", "--upper", "--lang", "en"]), 0)
+        self.assertIn("IYI", self.files["invented.srt"].getvalue())
+
     def test_options_forwarded(self) -> None:
         self.assertEqual(main(["invented.wav", "--lang", "en", "--device", "cpu",
                                "--compute-type", "float32", "--no-vad"]), 0)
@@ -174,6 +181,7 @@ class BurnTests(unittest.TestCase):
             args = run.call_args.args[0]
             self.assertIn(str(source.resolve()), args)
             self.assertIn("ass=captions.ass", args)
+            self.assertIn("yuv420p", args)
             self.assertIn("-n", args)
             self.assertNotIn("shell", run.call_args.kwargs)
             self.assertEqual(copy.call_args.args[1], Path("temporary-workspace/captions.ass"))
