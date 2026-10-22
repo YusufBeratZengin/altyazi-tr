@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "altyazi-tr"
+version = "0.1.0"
+description = "Offline, word-timed Turkish subtitles for short vertical videos"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = ["faster-whisper>=1.1,<2"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: OS Independent",
+  "Topic :: Multimedia :: Video",
+]
+
+[project.optional-dependencies]
+ffmpeg = ["imageio-ffmpeg>=0.5,<1"]
+yaml = ["PyYAML>=6,<7"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "mypy>=1.15,<2", "types-PyYAML", "build"]
+
+[project.scripts]
+altyazi-tr = "altyazi_tr.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/altyazi_tr"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-m 'not slow'"
+markers = ["slow: explicit local-model smoke tests (never download models)"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/altyazi_tr"]
+
+[[tool.mypy.overrides]]
+module = ["faster_whisper.*", "ctranslate2.*", "imageio_ffmpeg.*"]
+ignore_missing_imports = true
