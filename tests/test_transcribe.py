@@ -128,6 +128,7 @@ class TranscribeTests(unittest.TestCase):
             {"device": "invalid"},
             {"model": ""},
             {"language": ""},
+            {"language": "unsupported"},
             {"compute_type": ""},
         ):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):

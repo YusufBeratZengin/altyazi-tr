@@ -16,17 +16,134 @@ class Transcript:
     compute_type: str
 
 
+SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
+    {
+        "af",
+        "am",
+        "ar",
+        "as",
+        "az",
+        "ba",
+        "be",
+        "bg",
+        "bn",
+        "bo",
+        "br",
+        "bs",
+        "ca",
+        "cs",
+        "cy",
+        "da",
+        "de",
+        "el",
+        "en",
+        "es",
+        "et",
+        "eu",
+        "fa",
+        "fi",
+        "fo",
+        "fr",
+        "gl",
+        "gu",
+        "ha",
+        "haw",
+        "he",
+        "hi",
+        "hr",
+        "ht",
+        "hu",
+        "hy",
+        "id",
+        "is",
+        "it",
+        "ja",
+        "jw",
+        "ka",
+        "kk",
+        "km",
+        "kn",
+        "ko",
+        "la",
+        "lb",
+        "ln",
+        "lo",
+        "lt",
+        "lv",
+        "mg",
+        "mi",
+        "mk",
+        "ml",
+        "mn",
+        "mr",
+        "ms",
+        "mt",
+        "my",
+        "ne",
+        "nl",
+        "nn",
+        "no",
+        "oc",
+        "pa",
+        "pl",
+        "ps",
+        "pt",
+        "ro",
+        "ru",
+        "sa",
+        "sd",
+        "si",
+        "sk",
+        "sl",
+        "sn",
+        "so",
+        "sq",
+        "sr",
+        "su",
+        "sv",
+        "sw",
+        "ta",
+        "te",
+        "tg",
+        "th",
+        "tk",
+        "tl",
+        "tr",
+        "tt",
+        "uk",
+        "ur",
+        "uz",
+        "vi",
+        "yi",
+        "yo",
+        "yue",
+        "zh",
+    }
+)
+
+
 def _model_directory(model: str) -> Path:
     path = Path(model)
     if not path.is_dir():
-        from faster_whisper.utils import download_model
+        try:
+            from faster_whisper.utils import download_model
 
-        # Despite the upstream helper's name, this flag only resolves the cache.
-        path = Path(download_model(model, local_files_only=True))
+            # Despite the upstream helper's name, this flag only resolves the cache.
+            path = Path(download_model(model, local_files_only=True))
+        except Exception as exc:
+            raise OSError(
+                f"Model '{model}' was not found in the local cache. altyazi-tr operates "
+                "strictly offline and never downloads models. Specify a local model directory "
+                "with --model or cache the model before use."
+            ) from exc
     # faster-whisper can fetch a fallback tokenizer even with local_files_only.
     # Validate before constructing the engine so that branch is unreachable.
     if any(not (path / name).is_file() for name in ("model.bin", "config.json", "tokenizer.json")):
-        raise ValueError("Local model must include model.bin, config.json, and tokenizer.json.")
+        raise ValueError(
+            f"Local model directory '{model}' must include model.bin, config.json, and "
+            "tokenizer.json. altyazi-tr operates strictly offline; use --model to point "
+            "to a complete model directory."
+        )
     return path
 
 
@@ -46,10 +163,18 @@ def transcribe(
     """
     if not source.is_file():
         raise ValueError("Input must be an existing local media file.")
+    try:
+        if source.stat().st_size == 0:
+            raise ValueError(f"Input media file '{source}' is empty or unreadable.")
+    except (FileNotFoundError, OSError):
+        pass
     if device not in ("auto", "cpu", "cuda"):
         raise ValueError("device must be auto, cpu, or cuda.")
     if not model.strip() or not language.strip() or (compute_type is not None and not compute_type):
         raise ValueError("Model, language, and compute type must not be empty.")
+    lang_code = language.strip().lower()
+    if lang_code not in SUPPORTED_LANGUAGES:
+        raise ValueError(f"Language '{language}' is not supported.")
     from ctranslate2 import get_cuda_device_count
     from faster_whisper import WhisperModel
 

@@ -86,6 +86,9 @@ hazır wheel bulunan bir Python sürümü ve mimari kullanın. Gerekirse uygun f
 altyazi-tr invented-clip.mp4 --model ./models/small -o captions --format all
 altyazi-tr invented-clip.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
 altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
+# Tanınan kelimeleri kaydedip modeli tekrar yüklemeden farklı stil ve düzen denemek için:
+altyazi-tr invented-clip.mp4 --model ./models/small --save-words words.json -o captions
+altyazi-tr --words-json words.json -o captions --format all --mode words --upper
 ```
 
 Dosya adları örnektir; depoda kayıt bulunmaz. Varsayılan dil `tr`'dir. Desteklenen
@@ -105,6 +108,11 @@ bir blokla başlar; okuma süresi için kısa komşu bloklar birleşebilir. ASS 
 `words` kipi, o anda söylenen kelimeyi vurgular; aradaki sessizlikte vurgu kaldırılır. SRT/VTT
 sabit metindir, bu renk hareketini taşımaz. Düz altyazıda kelimeleri olabildiğince
 ayrı tutmak için `--min-duration 0.01 --max-cps 10000` kullanabilirsiniz.
+
+`--save-words DOSYA` seçeneğiyle tanınan kelime zamanlamalarını ve güven puanlarını
+JSON dizisi olarak kaydedebilirsiniz. Daha sonra `--words-json DOSYA` vererek
+faster-whisper modelini tekrar yüklemeden farklı düzen parametreleri (`--max-chars`,
+`--mode`, `--upper`) ya da ASS stilleri deneyebilirsiniz.
 
 ![Temsili önizleme alanı; ekran görüntüsü değildir](docs/preview-placeholder.svg)
 

@@ -81,6 +81,9 @@ With a previously acquired local model:
 altyazi-tr invented-clip.mp4 --model ./models/small -o captions --format all
 altyazi-tr invented-clip.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
 altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
+# Save recognized words to re-layout or re-style without loading faster-whisper:
+altyazi-tr invented-clip.mp4 --model ./models/small --save-words words.json -o captions
+altyazi-tr --words-json words.json -o captions --format all --mode words --upper
 ```
 
 These commands use illustrative filenames, not bundled recordings. Default
@@ -99,6 +102,11 @@ neighbours can merge to meet reading targets. In ASS, `words` highlights only th
 currently spoken word, with no highlight during gaps; SRT/VTT remain static and
 cannot reproduce the color animation. Use `--min-duration 0.01 --max-cps 10000`
 to minimize merging for strictly word-by-word plain subtitles.
+
+Pass `--save-words FILE` to store the recognized word timestamps and confidence
+scores to a JSON array. You can subsequently pass `--words-json FILE` to experiment
+with different layout rules (`--max-chars`, `--mode`, `--upper`) or ASS styles
+without reloading faster-whisper or re-running model inference.
 
 ![Illustrative preview placeholder, not a screenshot](docs/preview-placeholder.svg)
 

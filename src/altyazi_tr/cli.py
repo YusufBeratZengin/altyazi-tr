@@ -10,6 +10,7 @@ from pathlib import Path
 from . import __version__, writers
 from .burn import burn
 from .layout import LayoutConfig, layout, layout_warnings
+from .models import Word
 from .style import Style, load_style
 from .transcribe import transcribe
 
@@ -18,7 +19,13 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         prog="altyazi-tr", description="Create offline, word-timed subtitles from local media."
     )
-    result.add_argument("input", type=Path)
+    result.add_argument(
+        "input",
+        nargs="?",
+        default=None,
+        type=Path,
+        help="Input media file (optional if --words-json is provided)",
+    )
     result.add_argument(
         "-o", "--output", type=Path, help="Output filename or stem (default: input stem)"
     )
@@ -42,15 +49,67 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--position", choices=("bottom", "middle", "upper"))
     result.add_argument("--report", choices=("json",), help="Write <stem>.report.json")
     result.add_argument("--confidence", type=float, default=0.6)
+    result.add_argument(
+        "--words-json",
+        type=Path,
+        help="Input pre-saved word list JSON without loading faster-whisper",
+    )
+    result.add_argument(
+        "--save-words",
+        type=Path,
+        help="Save recognized words to JSON array for later re-layout",
+    )
     result.add_argument("--version", action="version", version=__version__)
     return result
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = parser().parse_args(argv)
+def _load_words_json(path: Path) -> tuple[Word, ...]:
+    if not path.is_file():
+        raise ValueError("Words JSON file must exist.")
     try:
-        if not args.input.is_file():
-            raise ValueError("Input must be an existing local media file.")
+        with path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except Exception as exc:
+        raise ValueError(f"Failed to read words JSON file: {exc}") from exc
+    if not isinstance(data, list):
+        raise ValueError("Words JSON must be an array of word objects.")
+    words: list[Word] = []
+    for item in data:
+        if not isinstance(item, dict):
+            raise ValueError("Each item in words JSON must be an object.")
+        try:
+            words.append(
+                Word(
+                    start=float(item["start"]),
+                    end=float(item["end"]),
+                    text=str(item["text"]),
+                    prob=float(item.get("prob", 1.0)),
+                )
+            )
+        except (KeyError, ValueError, TypeError) as exc:
+            raise ValueError(f"Invalid word entry in words JSON: {exc}") from exc
+    return tuple(words)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    p = parser()
+    args = p.parse_args(argv)
+    if not args.input and not args.words_json:
+        p.error("the following arguments are required: input (or --words-json)")
+    try:
+        if args.input:
+            if not args.input.is_file():
+                raise ValueError("Input must be an existing local media file.")
+            try:
+                if args.input.stat().st_size == 0:
+                    raise ValueError(f"Input media file '{args.input}' is empty.")
+            except (FileNotFoundError, OSError):
+                pass
+        if args.words_json:
+            if not args.words_json.is_file():
+                raise ValueError("Words JSON file must exist.")
+        if args.burn and not args.input:
+            raise ValueError("--burn requires an input media file.")
         config = LayoutConfig(
             max_chars=args.max_chars,
             max_lines=args.max_lines,
@@ -67,9 +126,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         style = load_style(args.style) if args.style else Style()
         if args.position:
             style = replace(style, position=args.position)
-        target = args.output or args.input.with_suffix("")
+        target = args.output or (
+            args.input.with_suffix("") if args.input else args.words_json.with_suffix("")
+        )
         stem = (
-            target.with_suffix("") if target.suffix.lower() in (".srt", ".vtt", ".ass") else target
+            target.with_suffix("")
+            if target.suffix.lower() in (".srt", ".vtt", ".ass", ".json")
+            else target
         )
         formats: tuple[str, ...] = ("srt", "vtt", "ass") if args.format == "all" else (args.format,)
         if args.burn and "ass" not in formats:
@@ -82,20 +145,43 @@ def main(argv: Sequence[str] | None = None) -> int:
             planned.append(report_path)
         if args.burn:
             planned.append(burned_path)
-        protected = {args.input.resolve()}
+        if args.save_words:
+            planned.append(args.save_words)
+        protected: set[Path] = set()
+        if args.input:
+            protected.add(args.input.resolve())
         if args.style:
             protected.add(args.style.resolve())
+        if args.words_json:
+            protected.add(args.words_json.resolve())
         if any(p.exists() or p.resolve() in protected for p in planned):
             raise ValueError("Output files must be new and distinct from input and style files.")
-        transcript = transcribe(
-            args.input,
-            model=args.model,
-            device=args.device,
-            compute_type=args.compute_type,
-            language=args.lang,
-            vad=not args.no_vad,
-        )
-        cues = layout(transcript.words, config, duration=transcript.duration)
+        if args.words_json:
+            words = _load_words_json(args.words_json)
+            duration = words[-1].end if words else 0.0
+            language = args.lang
+            device = "none"
+            compute_type = "none"
+        else:
+            transcript = transcribe(
+                args.input,
+                model=args.model,
+                device=args.device,
+                compute_type=args.compute_type,
+                language=args.lang,
+                vad=not args.no_vad,
+            )
+            words = transcript.words
+            duration = transcript.duration
+            language = transcript.language
+            device = transcript.device
+            compute_type = transcript.compute_type
+        if args.save_words:
+            args.save_words.parent.mkdir(parents=True, exist_ok=True)
+            with args.save_words.open("x", encoding="utf-8", newline="\n") as handle:
+                json.dump([asdict(w) for w in words], handle, ensure_ascii=False, indent=2)
+                handle.write("\n")
+        cues = layout(words, config, duration=duration)
         warnings = layout_warnings(cues, config)
         for fmt, path in outputs.items():
             text = (
@@ -111,15 +197,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.report:
             report = {
                 "version": __version__,
-                "language": transcript.language,
-                "duration": transcript.duration,
-                "device": transcript.device,
-                "compute_type": transcript.compute_type,
+                "language": language,
+                "duration": duration,
+                "device": device,
+                "compute_type": compute_type,
                 "cue_count": len(cues),
                 "confidence_threshold": args.confidence,
-                "low_confidence_words": [
-                    asdict(w) for w in transcript.words if w.prob < args.confidence
-                ],
+                "low_confidence_words": [asdict(w) for w in words if w.prob < args.confidence],
                 "layout_warnings": warnings,
             }
             with report_path.open("x", encoding="utf-8", newline="\n") as handle:
