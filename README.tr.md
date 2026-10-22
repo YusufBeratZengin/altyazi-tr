@@ -2,7 +2,7 @@
 
 altyazi-tr, kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime zamanlı Türkçe altyazı üretir.
 
-[![CI](https://img.shields.io/badge/CI-configured-lightgrey)](.github/workflows/ci.yml)
+[![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
 [![Lisans: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [English](README.md)
@@ -10,8 +10,7 @@ altyazi-tr, kısa dikey videolar için faster-whisper kullanarak çevrimdışı 
 CLI, bilgisayarınızdaki video veya ses dosyasından SRT, WebVTT ya da stilli ASS
 oluşturur. Türkçe büyük harf dönüşümünü, kısa satırları, duraklamaları ve okuma
 süresini gözetir. Ses ve metin bilgisayarınızda kalır; API hesabı veya ücretli
-servis gerekmez. CI rozeti iş akışına bağlantıdır; sunucuda testlerin geçtiğini
-iddia etmez. GitHub deposu açıldığında canlı Actions rozetiyle değiştirilebilir.
+servis gerekmez.
 
 ## Kurulum
 

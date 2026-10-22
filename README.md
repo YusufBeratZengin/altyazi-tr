@@ -2,16 +2,14 @@
 
 altyazi-tr creates offline, word-timed Turkish subtitles for short vertical videos using faster-whisper.
 
-[![CI](https://img.shields.io/badge/CI-configured-lightgrey)](.github/workflows/ci.yml)
+[![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [Türkçe](README.tr.md)
 
 The CLI reads local video or audio and writes SRT, WebVTT, or styled ASS. It handles
 Turkish capitalization, short lines, pauses, and reading targets. Audio and text
-stay on your machine. No API account or paid service is required. The CI badge
-links to the workflow; it is not a claim that a hosted run has passed. Once a
-GitHub remote exists, it can be replaced with that repository's live Actions badge.
+stay on your machine. No API account or paid service is required.
 
 ## Installation
 
