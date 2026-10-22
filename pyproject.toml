@@ -9,6 +9,8 @@ description = "Offline, word-timed Turkish subtitles for short vertical videos"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+authors = [{ name = "Yusuf Berat Zengin", email = "118852217+YusufBeratZengin@users.noreply.github.com" }]
+keywords = ["subtitles", "turkish", "faster-whisper", "srt", "ass", "karaoke"]
 dependencies = ["faster-whisper>=1.1,<2"]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -16,6 +18,10 @@ classifiers = [
   "Operating System :: OS Independent",
   "Topic :: Multimedia :: Video",
 ]
+
+[project.urls]
+Homepage = "https://github.com/YusufBeratZengin/altyazi-tr"
+Issues = "https://github.com/YusufBeratZengin/altyazi-tr/issues"
 
 [project.optional-dependencies]
 ffmpeg = ["imageio-ffmpeg>=0.5,<1"]

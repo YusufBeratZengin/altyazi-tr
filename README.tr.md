@@ -56,9 +56,9 @@ verebilirsiniz. Ham OpenAI checkpoint dosyası, dönüştürülmüş model klas�
 yerini tutmaz.
 
 Modeli internet bağlantısı olan bir bilgisayarda
-[upstream model yönergeleriyle](https://github.com/SYSTRAN/faster-whisper#model-conversion)
-ayrıca edinin ve klasörün tamamını çevrimdışı bilgisayara taşıyın. Model edinmek
-için kayıt yüklemeniz gerekmez. `--model ./models/small` kullanıcı önbelleğine
+[ana projenin model yönergeleriyle](https://github.com/SYSTRAN/faster-whisper#model-conversion)
+ayrıca edinin ve klasörün tamamını çevrimdışı bilgisayara taşıyın. Modeli indirirken
+kayıtlarınızı hiçbir yere yüklemeyin. `--model ./models/small` kullanıcı önbelleğine
 bağımlılığı kaldırır. Model eksikse hata verilir; ses, metin ve rapor herhangi
 bir servise gönderilmez. Model ve medya dosyaları Git dışında tutulur.
 
@@ -72,7 +72,7 @@ sağlar. `--compute-type`, normal varsayılanı değiştirir: CPU'da `int8`, CUD
 `--device cuda` seçeneğinde hatalar gizlenmez.
 
 GPU için uyumlu NVIDIA sürücüsü, CUDA ve cuDNN kurulumu gerekir;
-[upstream GPU gereksinimlerini](https://github.com/SYSTRAN/faster-whisper#gpu)
+[ana projenin GPU gereksinimlerini](https://github.com/SYSTRAN/faster-whisper#gpu)
 kontrol edin. Gereksinimler CTranslate2 sürümüne göre değişebilir. Bu paketi kurmak,
 GPU ortamının hazır olduğu anlamına gelmez. Windows'ta yerel bağımlılıkları için
 hazır wheel bulunan bir Python sürümü ve mimari kullanın. Gerekirse uygun ffmpeg'yi
@@ -90,8 +90,9 @@ altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --b
 ```
 
 Dosya adları örnektir; depoda kayıt bulunmaz. Varsayılan dil `tr`'dir. Desteklenen
-başka bir dil için örneğin `--lang en` kullanın ve çok dilli model seçin. Türkçe
-büyük harf dönüşümü dile özeldir ve yalnız `--upper` ile uygulanır.
+başka bir dil için örneğin `--lang en` kullanın ve çok dilli model seçin. Büyük harf
+dönüşümü isteğe bağlıdır (`--upper`). Noktalı/noktasız I ayrımı yalnız `--lang tr`
+ve `az` için uygulanır; diğer dillerde düz büyük harf kullanılır.
 
 `-o`, uzantısız çıktı adı veya altyazı dosyası adı alır. `-o clip.v1.srt --format all`,
 `clip.v1.srt`, `clip.v1.vtt` ve `clip.v1.ass` üretir. `-o` verilmezse girdi dosyasının
@@ -102,7 +103,7 @@ başarısız olursa önceden yazılmış altyazı ve rapor dosyaları kalır.
 
 `groups`, her altyazı bloğunda bir kelime grubu gösterir. `words`, kelime başına
 bir blokla başlar; okuma süresi için kısa komşu bloklar birleşebilir. ASS çıktısında
-o anda söylenen kelime vurgulanır; aradaki sessizlikte vurgu kaldırılır. SRT/VTT
+`words` kipi, o anda söylenen kelimeyi vurgular; aradaki sessizlikte vurgu kaldırılır. SRT/VTT
 sabit metindir, bu renk hareketini taşımaz. Düz altyazıda kelimeleri olabildiğince
 ayrı tutmak için `--min-duration 0.01 --max-cps 10000` kullanabilirsiniz.
 
@@ -191,13 +192,13 @@ Aşağıdaki ölçekler yaklaşık değerlerdir; bu projede yapılmış ölçüm
 
 Hız, bellek ve doğruluk; donanıma, hesap türüne, gürültüye, konuşmaya ve dile göre
 değişir. Tablo genel beklentiyi gösterir; Türkçe başarım testi veya garanti değildir.
-[Upstream modellere](https://github.com/openai/whisper#available-models-and-languages)
+[Ana projenin model listesine](https://github.com/openai/whisper#available-models-and-languages)
 bakabilirsiniz. Konuşmacı ayrımı, çeviri, zorunlu hizalama ve videoyu yeniden
 kadrajlama yoktur. Müzik, üst üste konuşma, sessizlik ve noktalama; hatalara veya
 olmayan sözlerin üretilmesine yol açabilir. Yayınlamadan önce metni ve zamanlamayı
 kontrol edin. SRT/VTT, ASS stillerini korumaz. ASS zamanları saniyenin yüzde biri
 hassasiyetindedir; daha kısa olaylar yuvarlamada kaybolabilir. Girdi medyasının
-üzerine yazılmaz. Paket kodu ağ çağrısı yapmaz; kurulum ve haricî model edinme
+üzerine yazılmaz. Paket kodu ağ çağrısı yapmaz; kurulum ve dışarıdan model edinme
 ayrı çevrim içi adımlardır.
 
 ## Katkı

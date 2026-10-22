@@ -87,7 +87,8 @@ altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --b
 
 These commands use illustrative filenames, not bundled recordings. Default
 language is `tr`; for another supported language, pass e.g. `--lang en` and use a
-multilingual model. Turkish uppercase conversion is opt-in and language-specific.
+multilingual model. Uppercase conversion is opt-in (`--upper`); the dotted/dotless I
+mapping is applied only for `--lang tr` and `az`, other languages use plain uppercase.
 
 `-o` accepts a stem or a subtitle filename. `-o clip.v1.srt --format all` writes
 `clip.v1.srt`, `clip.v1.vtt`, and `clip.v1.ass`. Without `-o`, the input stem is used.

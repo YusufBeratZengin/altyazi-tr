@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fix a sentence-final "de." or "ki." being carried into the next cue and falsely reported as a trailing conjunction.
+- Apply the Turkish dotted/dotless I mapping to `--upper` only for `--lang tr`/`az`.
+- Never report a media duration shorter than the last decoded word.
+- Burn with `yuv420p` so the output plays in common players.
+
 ## 0.1.0 - 2026-10-22
 
 - Add offline faster-whisper transcription with word timestamps, VAD, and CPU int8 fallback.
