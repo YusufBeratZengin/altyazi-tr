@@ -204,3 +204,14 @@ class CLIWordsTests(unittest.TestCase):
         with patch("sys.argv", ["altyazi-tr", "--version"]), self.assertRaises(SystemExit) as cm:
             runpy.run_module("altyazi_tr", run_name="__main__")
         self.assertEqual(cm.exception.code, 0)
+
+
+class NullTextTests(unittest.TestCase):
+    def test_null_text_is_rejected_not_stringified(self) -> None:
+        from altyazi_tr.cli import _load_words_json
+
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "w.json"
+            path.write_text('[{"start": 0, "end": 1, "text": null}]', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                _load_words_json(path)

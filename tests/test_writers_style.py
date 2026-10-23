@@ -112,3 +112,23 @@ class StyleTests(unittest.TestCase):
     def test_yaml_dependency_missing(self) -> None:
         with patch.dict("sys.modules", {"yaml": None}), self.assertRaisesRegex(ValueError, "extra"):
             load_style(Path("style.yml"))
+
+
+class ReadmeRegressionTests(unittest.TestCase):
+    def test_readme_style_with_float_outline_loads(self) -> None:
+        import json
+        import tempfile
+
+        text = Path("README.md").read_text(encoding="utf-8")
+        block = text.split('"font": "DejaVu Sans"', 1)[1].split("```", 1)[0]
+        data = json.loads('{"font": "DejaVu Sans"' + block)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "style.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            self.assertEqual(load_style(path).outline, 4.0)
+
+    def test_outline_rejects_bool_and_negative(self) -> None:
+        with self.assertRaises(ValueError):
+            Style(outline=True)
+        with self.assertRaises(ValueError):
+            Style(outline=-0.5)

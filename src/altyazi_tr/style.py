@@ -3,6 +3,7 @@
 import json
 import re
 from dataclasses import dataclass, fields
+from math import isfinite
 from pathlib import Path
 from typing import Literal
 
@@ -14,7 +15,7 @@ class Style:
     primary_color: str = "&H00FFFFFF"
     highlight_color: str = "&H0000FFFF"
     outline_color: str = "&H00000000"
-    outline: int = 4
+    outline: float = 4
     bold: bool = True
     position: Literal["bottom", "middle", "upper"] = "bottom"
     margin_v: int = 320
@@ -28,8 +29,13 @@ class Style:
             raise ValueError("Font must be a non-empty name without ASS separators.")
         for name, low, high in (("font_size", 1, 300), ("outline", 0, 20), ("margin_v", 0, 900)):
             value = getattr(self, name)
-            if type(value) is not int or not low <= value <= high:
-                raise ValueError(f"{name} must be an integer between {low} and {high}.")
+            if name == "outline":
+                numeric = type(value) in (int, float) and isfinite(value)
+            else:
+                numeric = type(value) is int
+            if not numeric or not low <= value <= high:
+                kind = "a number" if name == "outline" else "an integer"
+                raise ValueError(f"{name} must be {kind} between {low} and {high}.")
         for name in ("primary_color", "highlight_color", "outline_color"):
             value = getattr(self, name)
             if not isinstance(value, str) or re.fullmatch(r"&H[0-9a-fA-F]{8}", value) is None:

@@ -78,6 +78,8 @@ def _load_words_json(path: Path) -> tuple[Word, ...]:
         if not isinstance(item, dict):
             raise ValueError("Each item in words JSON must be an object.")
         try:
+            if not isinstance(item.get("text"), str):
+                raise TypeError("text must be a string")
             words.append(
                 Word(
                     start=float(item["start"]),
