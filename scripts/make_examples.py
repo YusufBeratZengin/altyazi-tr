@@ -40,6 +40,11 @@ def generate(target_dir: Path | str = "docs/examples") -> None:
     (dest / "sample.srt").write_text(srt_content, encoding="utf-8", newline="\n")
     (dest / "sample.vtt").write_text(vtt_content, encoding="utf-8", newline="\n")
     (dest / "sample.ass").write_text(ass_content, encoding="utf-8", newline="\n")
+    (dest / "sample.words.json").write_text(
+        json.dumps([asdict(w) for w in SAMPLE_WORDS], ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
     report = {
         "version": __version__,

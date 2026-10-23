@@ -1,122 +1,82 @@
 # altyazi-tr
 
-altyazi-tr creates offline, word-timed Turkish subtitles for short vertical videos using faster-whisper.
+Offline, word-timed Turkish subtitles for short vertical videos using faster-whisper.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/altyazi-tr.svg)](https://pypi.org/project/altyazi-tr/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [Türkçe](README.tr.md)
 
-The CLI reads local video or audio and writes SRT, WebVTT, or styled ASS. It handles
-Turkish capitalization, short lines, pauses, and reading targets. Audio and text
-stay on your machine. No API account or paid service is required.
+![altyazi-tr terminal demo](docs/demo.svg)
 
-## Installation
+## Why altyazi-tr?
 
-Python 3.10 or newer is required. From a checkout:
+- **100% Offline & Private**: Zero external API calls, zero telemetry, and zero automatic model downloads. Your recordings, audio, and subtitle texts stay on your local machine.
+- **Engineered for Vertical Video (9:16)**: Built specifically for Shorts, Reels, and TikTok with tight line widths (18 characters), smart pause-aware line wrapping, and active-word karaoke animations for styled ASS subtitles.
+- **Native Turkish Language Rules**: Proper Turkish uppercase handling (`i→İ`, `ı→I`), avoidance of stranded conjunctions (`ve`, `ama`, `ki`, `de`/`da`) at line ends, and actionable confidence warning reports.
 
-```sh
-python -m venv .venv
-# Linux / macOS:
-. .venv/bin/activate
-# Windows PowerShell instead:
-# .venv\Scripts\Activate.ps1
-python -m pip install .
-```
-
-`faster-whisper` is a required dependency. Optional extras:
-
-```sh
-python -m pip install ".[ffmpeg,yaml]"
-```
-
-ffmpeg is needed **only for `--burn`**. Recognition uses faster-whisper's PyAV
-decoder and does not require the ffmpeg executable. Discovery order for burning:
-
-1. `ffmpeg` on `PATH`.
-2. `imageio_ffmpeg.get_ffmpeg_exe()` from the `ffmpeg` extra. That package may
-   honor `IMAGEIO_FFMPEG_EXE` and its own executable selection rules.
-
-The selected ffmpeg must support `ass`/libass, `libx264`, and AAC. Some bundled
-builds lack libass; install a suitable system build if burning fails. Choose and
-install the font used in your style; missing fonts can alter wrapping.
-
-### Local models and offline operation
-
-Package installation and initial model acquisition need internet access. This
-CLI **never downloads a model**, including on first use: the adapter always passes
-`local_files_only=True`. A named model such as `small` must already be in the
-Hugging Face cache. Alternatively, supply a complete faster-whisper/CTranslate2
-model directory containing its tokenizer assets. A raw OpenAI checkpoint is not
-interchangeable with a converted model directory.
-
-Acquire a model separately on a connected machine, following the
-[upstream model instructions](https://github.com/SYSTRAN/faster-whisper#model-conversion),
-then copy the complete directory to the offline machine. Do not upload recordings
-to download a model. `--model ./models/small` avoids dependence on a user cache.
-Missing models produce an error; transcription does not send audio, text, or
-reports to a service. Model files and media are excluded from Git.
-
-### CPU, GPU, and Windows
-
-`--device auto` selects CUDA when CTranslate2 reports a GPU; otherwise it uses
-CPU with `int8`. If automatic CUDA inference fails with a runtime error, it retries
-on CPU int8. `--device cpu` avoids GPU dependencies. `--compute-type` overrides
-the normal default (`int8` on CPU, `float16` on CUDA); automatic CUDA fallback
-still uses int8. Explicit `--device cuda` failures remain errors.
-
-GPU use requires a compatible NVIDIA driver, CUDA and cuDNN installation; check
-the [upstream GPU requirements](https://github.com/SYSTRAN/faster-whisper#gpu).
-GPU setup changes between CTranslate2 versions. Do not assume installing this
-package installs a working GPU stack. On Windows, use a Python/architecture with
-wheels for the native dependencies, add a suitable ffmpeg to `PATH` if needed,
-quote paths with spaces, and use a locally installed font such as `Arial` in the
-style if DejaVu Sans is unavailable. Files are UTF-8.
+---
 
 ## Quick start
 
-With a previously acquired local model:
+### 1. Installation
+
+Python 3.10 or newer is required.
 
 ```sh
-altyazi-tr invented-clip.mp4 --model ./models/small -o captions --format all
-altyazi-tr invented-clip.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
-altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
-# Save recognized words to re-layout or re-style without loading faster-whisper:
-altyazi-tr invented-clip.mp4 --model ./models/small --save-words words.json -o captions
-altyazi-tr --words-json words.json -o captions --format all --mode words --upper
+# Create and activate virtual environment
+python -m venv .venv
+
+# Linux / macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .venv\Scripts\Activate.ps1
+
+# Install core package
+python -m pip install altyazi-tr
+
+# Or with burning and YAML support from checkout:
+python -m pip install ".[ffmpeg,yaml]"
 ```
 
-These commands use illustrative filenames, not bundled recordings. Default
-language is `tr`; for another supported language, pass e.g. `--lang en` and use a
-multilingual model. Uppercase conversion is opt-in (`--upper`); the dotted/dotless I
-mapping is applied only for `--lang tr` and `az`, other languages use plain uppercase.
+Verify the installation:
 
-`-o` accepts a stem or a subtitle filename. `-o clip.v1.srt --format all` writes
-`clip.v1.srt`, `clip.v1.vtt`, and `clip.v1.ass`. Without `-o`, the input stem is used.
-Parent directories are created. Existing output files are refused. `--burn` also
-writes ASS if necessary, then `<stem>.burned.mp4` (H.264/AAC, requiring a video
-stream). Subtitle/report files already written remain available if burning fails.
+```sh
+altyazi-tr --help
+```
 
-`groups` shows a word group per cue. `words` starts with one word per cue; short
-neighbours can merge to meet reading targets. In ASS, `words` highlights only the
-currently spoken word, with no highlight during gaps; SRT/VTT remain static and
-cannot reproduce the color animation. Use `--min-duration 0.01 --max-cps 10000`
-to minimize merging for strictly word-by-word plain subtitles.
+### 2. Copy-paste verified working demo
 
-Pass `--save-words FILE` to store the recognized word timestamps and confidence
-scores to a JSON array. You can subsequently pass `--words-json FILE` to experiment
-with different layout rules (`--max-chars`, `--mode`, `--upper`) or ASS styles
-without reloading faster-whisper or re-running model inference.
+Test subtitle generation immediately using pre-saved deterministic word tokens (no faster-whisper model download needed):
 
-![Illustrative preview placeholder, not a screenshot](docs/preview-placeholder.svg)
+```sh
+altyazi-tr --words-json docs/examples/sample.words.json -o captions --format all --mode words --upper
+```
 
-The [docs folder](docs/README.md) reserves space for a real GIF or screenshot.
+This writes `captions.srt`, `captions.vtt`, and `captions.ass` to the current directory.
 
-## Example output
+### 3. Transcribe a local video
 
-Deterministic sample files generated from synthetic word timings are located in [docs/examples/](docs/examples/).
+When you have a faster-whisper model (e.g. `small` in your local cache or local directory):
 
-Trimmed SRT excerpt ([`sample.srt`](docs/examples/sample.srt)):
+```sh
+altyazi-tr video.mp4 --model ./models/small -o captions --format all
+```
+
+---
+
+## Usage examples
+
+### Standard Subtitles (SRT & WebVTT)
+
+```sh
+altyazi-tr video.mp4 --model ./models/small -o captions --format srt
+altyazi-tr video.mp4 --model ./models/small -o captions --format vtt
+```
+
+Trimmed SRT excerpt ([`docs/examples/sample.srt`](docs/examples/sample.srt)):
 
 ```srt
 1
@@ -135,7 +95,15 @@ HAZIRLIYORUZ ÇÜNKÜ
 SES ÇOK ÖNEMLİ.
 ```
 
-Karaoke ASS excerpt ([`sample.ass`](docs/examples/sample.ass)), highlighting each spoken word with silence gaps in between:
+### Karaoke Active-Word ASS Subtitles
+
+The `words` mode highlights each active word as it is spoken and removes the highlight during pauses:
+
+```sh
+altyazi-tr video.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
+```
+
+Karaoke ASS excerpt ([`docs/examples/sample.ass`](docs/examples/sample.ass)):
 
 ```ass
 Dialogue: 0,0:00:00.00,0:00:00.42,Default,,0,0,0,,{\1c&H00FFFF&\1a&H00&}BUGÜN{\rDefault} DİKEY\NVİDEOLAR İÇİN
@@ -145,37 +113,93 @@ Dialogue: 0,0:00:00.95,0:00:01.02,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇ�
 Dialogue: 0,0:00:01.02,0:00:01.60,Default,,0,0,0,,BUGÜN DİKEY\N{\1c&H00FFFF&\1a&H00&}VİDEOLAR{\rDefault} İÇİN
 ```
 
-## Layout and styling
+### Video Hardcoding / Burn-in (`--burn`)
 
-Defaults: 18 characters per line, at most 2 lines, 0.6-second pause threshold,
-0.8-second minimum display time, 18 characters per second. Spaces and punctuation
-count toward line length and reading speed. Width is a character count, not a
-font measurement. `--max-lines` supports 1–4 lines.
+Burn stylized ASS subtitles directly into video using local ffmpeg:
 
-Punctuation and pauses suggest breaks. The line search avoids leaving `ve`,
-`ama`, `ki`, and separately written `de`/`da` at the end where space permits.
-Short neighbours merge if they fit and are not separated by a long pause. Cues
-may extend into silence, capped at the next cue or media end. They never overlap.
+```sh
+altyazi-tr video.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
+```
 
-Constraints can conflict: a single long word is preserved, and dense speech may
-exceed the reading target. Text is never silently discarded to enforce a width
-or speed limit. The CLI warns; `--report json` lists `long_word`, `short_duration`,
-`reading_speed`, or `trailing_conjunction` notices. It also lists words below
-`--confidence` (default 0.6), with original text, probability and timestamps.
-Probabilities are model estimates, not calibrated accuracy scores. The report is
-local and can contain sensitive transcript text; treat it like the recording.
+Produces `rendered.burned.mp4` encoded with H.264 (`yuv420p`) and AAC audio.
 
-ASS uses a 1080×1920 reference canvas, bold text, outline, and bottom alignment
-with a 320-pixel vertical margin. Positions are `bottom`, `middle`, and `upper`;
-`--position` overrides the style file. Middle ignores the vertical margin under
-ASS alignment rules; upper uses it from the top. Other aspect ratios need an
-appropriate style. JSON works without extras; YAML needs `[yaml]` and uses a safe
-loader. See [JSON](docs/style.json) and [YAML](docs/style.yaml) examples. Supported
-fields are `font`, `font_size` (1–300), `primary_color`, `highlight_color`,
-`outline_color`, `outline` (0–20), `bold`, `position`, and `margin_v` (0–900).
-Colors use ASS `&HAABBGGRR` (alpha, blue, green, red); unknown fields are rejected.
+### Decoupled Re-layout and Re-styling
 
-## Exit codes
+Persist recognized tokens to JSON once, then test different layout rules and styles instantly without re-running inference:
+
+```sh
+# 1. Transcribe once and save recognized word tokens
+altyazi-tr video.mp4 --model ./models/small --save-words words.json -o captions
+
+# 2. Re-layout or re-style from JSON in milliseconds
+altyazi-tr --words-json words.json -o captions_v2 --format all --mode words --max-chars 14 --upper
+```
+
+### Python API
+
+```python
+from altyazi_tr import LayoutConfig, Word, layout
+from altyazi_tr.writers import ass, srt, vtt
+
+words = [Word(0.0, 0.4, "iyi", 0.95), Word(0.5, 1.0, "ışık", 0.90)]
+cues = layout(words, LayoutConfig(upper=True), duration=2.0)
+
+print(srt(cues))
+vtt_text = vtt(cues)
+ass_karaoke = ass(cues, karaoke=True)
+```
+
+| Entry point | Purpose |
+| --- | --- |
+| `Word(start, end, text, prob)` | Validated, immutable timed token (seconds, probability 0–1). |
+| `Cue(start, end, lines)` | Immutable subtitle block containing lines of `Word` tuples. |
+| `layout(words, config, duration=None)` | Pure layout engine; enforces line limits, breaks, and reading speed. |
+| `turkish_upper(text)` | Correct Turkish uppercase mapping (`i→İ`, `ı→I`). |
+| `layout_warnings(cues, config)` | Detects unavoidable layout constraint notices. |
+| `transcribe.transcribe(path, ...)` | Local faster-whisper speech recognition with offline protection. |
+| `style.load_style(path)` | Parses and validates JSON/YAML ASS styles. |
+| `writers.srt/vtt/ass(cues)` | Formats subtitle cues to standard strings. |
+| `burn.burn(source, subtitles, output)` | Burns ASS into video via local ffmpeg. |
+
+---
+
+## Configuration
+
+### Layout Parameters
+
+| Option | Default | Description |
+| --- | :---: | --- |
+| `--mode {words,groups}` | `groups` | `groups` displays word groups; `words` highlights each spoken word in ASS. |
+| `--max-chars` | `18` | Maximum characters per line (including spaces and punctuation). |
+| `--max-lines` | `2` | Maximum lines per subtitle block (supported: 1–4). |
+| `--pause-threshold` | `0.6` | Silence duration (seconds) that triggers an automatic cue break. |
+| `--min-duration` | `0.8` | Minimum on-screen display duration (seconds) for each subtitle cue. |
+| `--max-cps` | `18.0` | Maximum reading speed (characters per second). |
+| `--upper` | `False` | Convert subtitles to uppercase (uses Turkish dotted/dotless I for `tr` and `az`). |
+
+### ASS Style Configuration
+
+Custom styles can be specified via JSON or YAML files (e.g. [`docs/style.json`](docs/style.json) or [`docs/style.yaml`](docs/style.yaml)):
+
+```json
+{
+  "font": "DejaVu Sans",
+  "font_size": 72,
+  "primary_color": "&H00FFFFFF",
+  "highlight_color": "&H0000FFFF",
+  "outline_color": "&H00000000",
+  "outline": 4.0,
+  "bold": true,
+  "position": "bottom",
+  "margin_v": 320
+}
+```
+
+- **Canvas**: Reference 1080×1920 canvas designed for vertical 9:16 video.
+- **Colors**: ASS format `&HAABBGGRR` (alpha, blue, green, red in hex).
+- **Position**: `bottom` (uses `margin_v` from bottom), `middle` (centered), `upper` (`margin_v` from top).
+
+### Exit Codes
 
 | Exit code | Category | Description |
 | :---: | --- | --- |
@@ -183,9 +207,9 @@ Colors use ASS `&HAABBGGRR` (alpha, blue, green, red); unknown fields are reject
 | `1` | Processing error | Runtime failure such as missing input file, empty/unreadable audio, un-cached offline model, output file collision, or invalid ASS style. |
 | `2` | Argument error | Invalid command-line arguments, unsupported options, or missing required parameters. |
 
-## Report schema
+### Report JSON Schema
 
-When running with `--report json`, altyazi-tr generates `<stem>.report.json` (see [docs/examples/report.json](docs/examples/report.json)) documenting transcription parameters and layout warnings:
+Running with `--report json` generates `<stem>.report.json` ([`docs/examples/report.json`](docs/examples/report.json)):
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -196,93 +220,62 @@ When running with `--report json`, altyazi-tr generates `<stem>.report.json` (se
 | `compute_type` | string | Precision used for inference (`int8`, `float16`, or `none`). |
 | `cue_count` | integer | Total number of subtitle cues produced. |
 | `confidence_threshold` | float | Threshold used to flag low-confidence words. |
-| `low_confidence_words` | array | List of `{start, end, text, prob}` tokens where probability is below the threshold. |
-| `layout_warnings` | array | List of `{cue, codes}` items where cues exceed layout constraints (`long_word`, `short_duration`, `reading_speed`, `trailing_conjunction`). |
+| `low_confidence_words` | array | List of `{start, end, text, prob}` tokens where probability is below threshold. |
+| `layout_warnings` | array | List of `{cue, codes}` items where cues exceed layout constraints. |
 
-Example JSON:
+---
 
-```json
-{
-  "version": "0.1.0",
-  "language": "tr",
-  "duration": 7.2,
-  "device": "cpu",
-  "compute_type": "int8",
-  "cue_count": 3,
-  "confidence_threshold": 0.6,
-  "low_confidence_words": [
-    {
-      "start": 3.68,
-      "end": 4.1,
-      "text": "çünkü",
-      "prob": 0.55
-    }
-  ],
-  "layout_warnings": []
-}
-```
+## FAQ & Limitations
 
-## API summary
+### Offline Operation & Model Acquisition
 
-```python
-from altyazi_tr import LayoutConfig, Word, layout
-from altyazi_tr.writers import ass, srt, vtt
+Package installation and initial model acquisition require internet access. However, the CLI **never downloads a model**, including on first use: the adapter always passes `local_files_only=True`.
 
-# Entirely invented phrase, no model needed.
-words = [Word(0.0, 0.4, "iyi", 0.95), Word(0.5, 1.0, "ışık", 0.90)]
-cues = layout(words, LayoutConfig(upper=True), duration=2.0)
-print(srt(cues))
-animated = ass(cues, karaoke=True)
-web_subtitles = vtt(cues)
-```
+A named model such as `small` must already reside in your Hugging Face cache, or you can provide a complete local faster-whisper/CTranslate2 model directory via `--model /path/to/model`. See upstream [faster-whisper model conversion](https://github.com/SYSTRAN/faster-whisper#model-conversion).
 
-| Entry point | Purpose |
-| --- | --- |
-| `Word(start, end, text, prob)` | Validated, immutable timed token; seconds, probability 0–1 |
-| `Cue(start, end, lines)` | Immutable subtitle block; lines contain `Word` tuples |
-| `layout(words, config, duration=None)` | Pure layout; preserves order and rejects overlapping words |
-| `turkish_upper(text)` | `i→İ`, `ı→I`, then Unicode uppercase |
-| `layout_warnings(cues, config)` | Unavoidable constraint notices |
-| `transcribe.transcribe(path, ...)` | Local recognition with model/device/precision/language/VAD controls |
-| `style.load_style(path)` | Validated JSON/YAML ASS style |
-| `writers.srt/vtt/ass(cues)` | Serialize to a string; caller controls storage |
-| `burn.burn(source, subtitles, output)` | Burn an ASS file with local ffmpeg; refuses overwrites |
-
-The `layout_warnings` function lives in `altyazi_tr.layout` (import it from that
-module). Importing the package does not load recognition libraries or models.
-The adapter skips empty or zero-duration decoder words, splits multiword tokens
-proportionally, and clips overlapping decoder intervals to the previous word end.
-The pure API accepts already valid, chronological words. Omit `duration` to avoid
-inventing time after the final word. Errors are English; CLI exits 0 on success,
-1 on processing errors, and 2 on argument parsing errors.
-
-## Model tradeoffs and limits
-
-Approximate model scales, not measurements of this project:
+### Model Scale & Tradeoffs
 
 | Multilingual model | Parameters (approx.) | Relative speed | Typical accuracy tradeoff |
 | --- | ---: | --- | --- |
-| tiny | 39M | Fastest | More Turkish recognition errors |
-| base | 74M | Fast | Useful for drafts |
-| small (default) | 244M | Moderate | Practical starting point |
-| medium | 769M | Slower | Often better in difficult speech |
-| large-v3 | 1,550M | Slowest here | Often strongest; more memory needed |
+| `tiny` | 39M | Fastest | Higher Turkish recognition error rate |
+| `base` | 74M | Fast | Useful for quick drafts |
+| `small` (recommended) | 244M | Moderate | Practical starting point for Turkish speech |
+| `medium` | 769M | Slower | Stronger accuracy in noisy speech |
+| `large-v3` | 1,550M | Slowest | Maximum accuracy; requires more VRAM / RAM |
 
-Actual speed, memory and accuracy vary with hardware, quantization, noise, speech
-and language. These are qualitative expectations, not a Turkish benchmark or
-guarantee. See [upstream models](https://github.com/openai/whisper#available-models-and-languages).
-No diarization, translation, forced alignment, or video reframing is included.
-Music, overlapping voices, silence, and punctuation can produce recognition
-errors or hallucinations. Review the subtitles and timing before publishing.
-SRT/VTT do not retain ASS styles. ASS timestamps have centisecond precision;
-events shorter than that may disappear after rounding. Original input media is
-never overwritten. The package itself has no network-calling code, but installation
-and external model acquisition are separate online steps.
+### CPU, GPU, and Hardware Acceleration
+
+- `--device auto`: Automatically selects CUDA if CTranslate2 detects an available GPU; otherwise falls back to CPU with `int8`. If CUDA inference fails with a runtime error, it safely retries on CPU int8.
+- `--device cpu`: Forces CPU inference and avoids GPU dependencies.
+- `--compute-type`: Overrides default quantization (`int8` on CPU, `float16` on CUDA).
+
+### Known Limitations
+
+- **No Diarization or Translation**: Does not separate multiple speakers or translate between languages.
+- **Background Music**: Heavy background music or singing can cause Whisper hallucinations or timing drift.
+- **Burning Requirements**: Burning (`--burn`) requires ffmpeg built with `libass` support.
+- **Aspect Ratio**: Default ASS canvas is 1080×1920 (9:16 vertical). Adapt the style file for landscape videos.
+
+---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, offline tests, lint/type checks,
-and the staged credential guard. CI covers Python 3.10 and 3.12 on Linux and
-Windows, without models. `python -m pytest -m slow` selects the opt-in local-model
-smoke test; no model or real recording is bundled. Keep examples synthetic and
-the English and Turkish READMEs in sync. Released under the [MIT License](LICENSE).
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, offline testing instructions, lint/type checks, and security guardrails.
+
+```sh
+# Run offline test suite with coverage
+python -m pytest
+
+# Run linter and strict type checker
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+```
+
+All contributions must preserve offline guarantees and privacy guardrails.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

@@ -1,128 +1,82 @@
 # altyazi-tr
 
-altyazi-tr, kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime zamanlı Türkçe altyazı üretir.
+Kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime zamanlı Türkçe altyazı üretimi.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
+[![PyPI sürümü](https://img.shields.io/pypi/v/altyazi-tr.svg)](https://pypi.org/project/altyazi-tr/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Lisans: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 [English](README.md)
 
-CLI, bilgisayarınızdaki video veya ses dosyasından SRT, WebVTT ya da stilli ASS
-oluşturur. Türkçe büyük harf dönüşümünü, kısa satırları, duraklamaları ve okuma
-süresini gözetir. Ses ve metin bilgisayarınızda kalır; API hesabı veya ücretli
-servis gerekmez.
+![altyazi-tr terminal demosu](docs/demo.svg)
 
-## Kurulum
+## Neden altyazi-tr?
 
-Python 3.10 veya üstü gerekir. Depoyu bilgisayarınıza aldıktan sonra:
+- **%100 Çevrimdışı ve Gizli**: Dış API çağrısı, telemetri veya otomatik model indirme yoktur. Ses kayıtlarınız, videolarınız ve altyazı metinleriniz tamamen bilgisayarınızda kalır.
+- **Dikey Videolara (9:16) Özel Tasarım**: Shorts, Reels ve TikTok için dar satır uzunlukları (18 karakter), duraklama duyarlı satır bölme ve stilli ASS altyazılarda renkli karaoke kelime animasyonları.
+- **Doğal Türkçe Dil Kuralları**: Noktalı ve noktasız I (`i→İ`, `ı→I`) ayrımını doğru yapan büyük harf çevrimi, satır sonunda yalnız kalan bağlaçları (`ve`, `ama`, `ki`, `de`/`da`) önleme ve düşük güvenli kelime uyarı raporları.
 
-```sh
-python -m venv .venv
-# Linux / macOS:
-. .venv/bin/activate
-# Windows PowerShell için bunun yerine:
-# .venv\Scripts\Activate.ps1
-python -m pip install .
-```
-
-`faster-whisper` ana bağımlılıktır. İsteğe bağlı ekler:
-
-```sh
-python -m pip install ".[ffmpeg,yaml]"
-```
-
-ffmpeg **yalnız `--burn` ile videoya gömmek için** gerekir. Ses tanıma,
-faster-whisper'ın PyAV çözücüsünü kullanır; ffmpeg çalıştırılabilir dosyasına
-ihtiyaç duymaz. Gömme işleminde ffmpeg şu sırayla aranır:
-
-1. `PATH` üzerindeki `ffmpeg`.
-2. `ffmpeg` ekiyle kurulan `imageio_ffmpeg.get_ffmpeg_exe()`. Bu paket,
-   `IMAGEIO_FFMPEG_EXE` değişkenini ve kendi dosya seçme kurallarını kullanabilir.
-
-Seçilen ffmpeg'de `ass`/libass, `libx264` ve AAC desteği bulunmalıdır. Bazı hazır
-derlemelerde libass yoktur; gömme başarısızsa uygun bir sistem derlemesi kurun.
-Stilde seçtiğiniz yazı tipi de bilgisayarınızda bulunmalı; eksik font satırların
-görünümünü değiştirebilir.
-
-### Yerel modeller ve çevrimdışı kullanım
-
-Paketlerin kurulması ve modelin ilk kez alınması internet gerektirir. Bu CLI,
-**ilk kullanımda bile model indirmez**; tanıma katmanı her zaman
-`local_files_only=True` kullanır. `small` gibi bir ad kullanacaksanız model,
-Hugging Face önbelleğinde önceden bulunmalıdır. Alternatif olarak tokenizer
-dosyalarını da içeren eksiksiz bir faster-whisper/CTranslate2 model klasörü
-verebilirsiniz. Ham OpenAI checkpoint dosyası, dönüştürülmüş model klasörünün
-yerini tutmaz.
-
-Modeli internet bağlantısı olan bir bilgisayarda
-[ana projenin model yönergeleriyle](https://github.com/SYSTRAN/faster-whisper#model-conversion)
-ayrıca edinin ve klasörün tamamını çevrimdışı bilgisayara taşıyın. Modeli indirirken
-kayıtlarınızı hiçbir yere yüklemeyin. `--model ./models/small` kullanıcı önbelleğine
-bağımlılığı kaldırır. Model eksikse hata verilir; ses, metin ve rapor herhangi
-bir servise gönderilmez. Model ve medya dosyaları Git dışında tutulur.
-
-### CPU, GPU ve Windows
-
-`--device auto`, CTranslate2 GPU bildirirse CUDA'yı seçer; aksi halde CPU üzerinde
-`int8` kullanır. Otomatik seçilen CUDA ile tanıma çalışma zamanı hatası verirse
-CPU int8 ile yeniden denenir. `--device cpu` GPU bağımlılıklarından kaçınmayı
-sağlar. `--compute-type`, normal varsayılanı değiştirir: CPU'da `int8`, CUDA'da
-`float16`. Otomatik CUDA'dan CPU'ya dönüşte yine int8 kullanılır. Açıkça verilen
-`--device cuda` seçeneğinde hatalar gizlenmez.
-
-GPU için uyumlu NVIDIA sürücüsü, CUDA ve cuDNN kurulumu gerekir;
-[ana projenin GPU gereksinimlerini](https://github.com/SYSTRAN/faster-whisper#gpu)
-kontrol edin. Gereksinimler CTranslate2 sürümüne göre değişebilir. Bu paketi kurmak,
-GPU ortamının hazır olduğu anlamına gelmez. Windows'ta yerel bağımlılıkları için
-hazır wheel bulunan bir Python sürümü ve mimari kullanın. Gerekirse uygun ffmpeg'yi
-`PATH`'e ekleyin, boşluk içeren yolları tırnak içine alın. DejaVu Sans yoksa stilde
-`Arial` gibi kurulu bir font seçin. Çıktılar UTF-8'dir.
+---
 
 ## Hızlı başlangıç
 
-Önceden edinilmiş yerel modelle:
+### 1. Kurulum
+
+Python 3.10 veya üstü gerekir.
 
 ```sh
-altyazi-tr invented-clip.mp4 --model ./models/small -o captions --format all
-altyazi-tr invented-clip.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
-altyazi-tr invented-clip.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
-# Tanınan kelimeleri kaydedip modeli tekrar yüklemeden farklı stil ve düzen denemek için:
-altyazi-tr invented-clip.mp4 --model ./models/small --save-words words.json -o captions
-altyazi-tr --words-json words.json -o captions --format all --mode words --upper
+# Sanal ortam oluşturun ve etkinleştirin
+python -m venv .venv
+
+# Linux / macOS:
+source .venv/bin/activate
+# Windows PowerShell:
+# .venv\Scripts\Activate.ps1
+
+# Temel paketi kurun
+python -m pip install altyazi-tr
+
+# Veya depodan video gömme ve YAML desteğiyle kurun:
+python -m pip install ".[ffmpeg,yaml]"
 ```
 
-Dosya adları örnektir; depoda kayıt bulunmaz. Varsayılan dil `tr`'dir. Desteklenen
-başka bir dil için örneğin `--lang en` kullanın ve çok dilli model seçin. Büyük harf
-dönüşümü isteğe bağlıdır (`--upper`). Noktalı/noktasız I ayrımı yalnız `--lang tr`
-ve `az` için uygulanır; diğer dillerde düz büyük harf kullanılır.
+Kurulumu doğrulayın:
 
-`-o`, uzantısız çıktı adı veya altyazı dosyası adı alır. `-o clip.v1.srt --format all`,
-`clip.v1.srt`, `clip.v1.vtt` ve `clip.v1.ass` üretir. `-o` verilmezse girdi dosyasının
-uzantısız adı kullanılır. Üst klasörler oluşturulur; mevcut çıktının üzerine
-yazılmaz. `--burn`, gerekiyorsa ASS dosyasını da oluşturur ve
-`<ad>.burned.mp4` üretir. H.264/AAC kullanır ve video akışı gerektirir. Gömme işlemi
-başarısız olursa önceden yazılmış altyazı ve rapor dosyaları kalır.
+```sh
+altyazi-tr --help
+```
 
-`groups`, her altyazı bloğunda bir kelime grubu gösterir. `words`, kelime başına
-bir blokla başlar; okuma süresi için kısa komşu bloklar birleşebilir. ASS çıktısında
-`words` kipi, o anda söylenen kelimeyi vurgular; aradaki sessizlikte vurgu kaldırılır. SRT/VTT
-sabit metindir, bu renk hareketini taşımaz. Düz altyazıda kelimeleri olabildiğince
-ayrı tutmak için `--min-duration 0.01 --max-cps 10000` kullanabilirsiniz.
+### 2. Kopyala-çalıştır doğrulanmış demo
 
-`--save-words DOSYA` seçeneğiyle tanınan kelime zamanlamalarını ve güven puanlarını
-JSON dizisi olarak kaydedebilirsiniz. Daha sonra `--words-json DOSYA` vererek
-faster-whisper modelini tekrar yüklemeden farklı düzen parametreleri (`--max-chars`,
-`--mode`, `--upper`) ya da ASS stilleri deneyebilirsiniz.
+Önceden kaydedilmiş örnek kelimelerle altyazı üretimini hemen deneyin (model indirme gerekmez):
 
-![Temsili önizleme alanı; ekran görüntüsü değildir](docs/preview-placeholder.svg)
+```sh
+altyazi-tr --words-json docs/examples/sample.words.json -o captions --format all --mode words --upper
+```
 
-Gerçek GIF veya ekran görüntüsü için [docs klasöründe](docs/README.md) yer ayrıldı.
+Bu komut geçerli klasörde `captions.srt`, `captions.vtt` ve `captions.ass` dosyalarını oluşturur.
 
-## Örnek çıktılar
+### 3. Yerel videodan altyazı üretimi
 
-Yapay kelime zamanlamalarından deterministik olarak üretilen örnek dosyalar [docs/examples/](docs/examples/) dizinindedir.
+Önceden indirilmiş bir faster-whisper modeliyle (örneğin yerel önbellekteki veya klasördeki `small` modeli):
 
-Kısaltılmış SRT örneği ([`sample.srt`](docs/examples/sample.srt)):
+```sh
+altyazi-tr video.mp4 --model ./models/small -o captions --format all
+```
+
+---
+
+## Kullanım örnekleri
+
+### Standart Altyazılar (SRT ve WebVTT)
+
+```sh
+altyazi-tr video.mp4 --model ./models/small -o captions --format srt
+altyazi-tr video.mp4 --model ./models/small -o captions --format vtt
+```
+
+Kısaltılmış SRT örneği ([`docs/examples/sample.srt`](docs/examples/sample.srt)):
 
 ```srt
 1
@@ -141,7 +95,15 @@ HAZIRLIYORUZ ÇÜNKÜ
 SES ÇOK ÖNEMLİ.
 ```
 
-Karaoke ASS örneği ([`sample.ass`](docs/examples/sample.ass)); konuşulan kelimeyi vurgularken duraklamalarda vurguyu kaldırır:
+### Karaoke Kelime Vurgulu ASS Altyazıları
+
+`words` kipi konuşulan kelimeyi anlık olarak vurgular, aradaki sessizliklerde vurguyu kaldırır:
+
+```sh
+altyazi-tr video.mp4 --model ./models/small -o karaoke --format ass --mode words --upper --report json
+```
+
+Karaoke ASS örneği ([`docs/examples/sample.ass`](docs/examples/sample.ass)):
 
 ```ass
 Dialogue: 0,0:00:00.00,0:00:00.42,Default,,0,0,0,,{\1c&H00FFFF&\1a&H00&}BUGÜN{\rDefault} DİKEY\NVİDEOLAR İÇİN
@@ -151,147 +113,169 @@ Dialogue: 0,0:00:00.95,0:00:01.02,Default,,0,0,0,,BUGÜN DİKEY\NVİDEOLAR İÇ�
 Dialogue: 0,0:00:01.02,0:00:01.60,Default,,0,0,0,,BUGÜN DİKEY\N{\1c&H00FFFF&\1a&H00&}VİDEOLAR{\rDefault} İÇİN
 ```
 
-## Yerleşim ve görünüm
+### Videoya Altyazı Gömme (`--burn`)
 
-Varsayılanlar: satır başına 18 karakter, ekranda en fazla 2 satır, 0,6 saniye
-duraklama eşiği, en az 0,8 saniye gösterim ve saniyede en fazla 18 karakter.
-Boşluk ve noktalama, uzunluğa ve okuma hızına dahildir. Genişlik, fontun piksel
-ölçümüyle değil karakter sayısıyla hesaplanır. `--max-lines` 1–4 satırı destekler.
+Stilli ASS altyazısını yerel ffmpeg kullanarak doğrudan videoya işleyin:
 
-Noktalama ve duraklamalar bölme noktalarıdır. Satır seçimi, yer varsa `ve`, `ama`,
-`ki` ve ayrı yazılan `de`/`da` bağlaçlarını satır sonunda bırakmaz. Kısa komşu
-bloklar, sığıyorsa ve arada uzun duraklama yoksa birleşir. Gösterim süresi sessiz
-aralığa uzatılabilir; sonraki bloğun başlangıcını veya medyanın sonunu aşmaz.
-Bloklar birbiriyle çakışmaz.
-
-Bazı koşullar aynı anda sağlanamaz: tek başına uzun bir kelime korunur; hızlı
-konuşma, hedef okuma hızını aşabilir. Genişlik veya hız sınırı için metin sessizce
-silinmez. CLI uyarı verir; `--report json`, `long_word`, `short_duration`,
-`reading_speed` ve `trailing_conjunction` bildirimlerini listeler. Raporda ayrıca
-`--confidence` eşiğinin (varsayılan 0,6) altındaki kelimeler; özgün metinleri,
-olasılıkları ve zamanlarıyla bulunur. Olasılıklar model tahminidir; ölçülmüş
-doğruluk puanı değildir. Yerel rapor hassas konuşma metni içerebilir; kaydın
-kendisi kadar özenle saklayın.
-
-ASS, 1080×1920 referans tuvali, kalın yazı, kontur ve alttan 320 piksel boşlukla
-alt hizalama kullanır. Konumlar `bottom`, `middle` ve `upper`'dır; `--position`,
-stil dosyasındaki konumu geçersiz kılar. ASS kurallarına göre orta hizalamada dikey
-boşluk etkisizdir; üst hizalamada üst kenardan ölçülür. Başka en boy oranları için
-stili uyarlayın. JSON ek bağımlılık istemez; YAML için `[yaml]` gerekir ve güvenli
-okuyucu kullanılır. [JSON](docs/style.json) ve [YAML](docs/style.yaml) örneklerine
-bakın. Alanlar: `font`, `font_size` (1–300), `primary_color`, `highlight_color`,
-`outline_color`, `outline` (0–20), `bold`, `position`, `margin_v` (0–900).
-Renkler ASS `&HAABBGGRR` biçimindedir: saydamlık, mavi, yeşil, kırmızı. Bilinmeyen
-alanlar reddedilir.
-
-## Çıkış kodları
-
-| Çıkış kodu | Kategori | Açıklama |
-| :---: | --- | --- |
-| `0` | Başarılı | Altyazı blokları başarıyla oluşturuldu ve yazıldı. |
-| `1` | İşlem hatası | Dosyanın bulunamaması, boş/okunamayan ses, yerelde olmayan model, dosya çakışması veya geçersiz ASS stili gibi çalışma zamanı hataları. |
-| `2` | Argüman hatası | Geçersiz komut satırı argümanları, tanınmayan seçenekler veya eksik zorunlu parametreler. |
-
-## Rapor şeması
-
-`--report json` seçeneği verildiğinde, altyazi-tr işlem ayrıntılarını ve düzen uyarılarını içeren `<ad>.report.json` dosyasını oluşturur (örnek: [docs/examples/report.json](docs/examples/report.json)):
-
-| Alan | Tür | Açıklama |
-| --- | --- | --- |
-| `version` | metin | Raporu üreten paket sürümü. |
-| `language` | metin | Tanıma işleminde kullanılan dil kodu. |
-| `duration` | ondalık sayı | Medya dosyasının saniye cinsinden süresi. |
-| `device` | metin | Çıkarımda kullanılan donanım (`cpu`, `cuda` veya `none`). |
-| `compute_type` | metin | Çıkarım sayı duyarlılığı (`int8`, `float16` veya `none`). |
-| `cue_count` | tam sayı | Üretilen toplam altyazı bloğu sayısı. |
-| `confidence_threshold` | ondalık sayı | Düşük güvenli kelimeler için eşik değeri. |
-| `low_confidence_words` | dizi | Güven puanı eşiğin altında kalan `{start, end, text, prob}` kelime listesi. |
-| `layout_warnings` | dizi | Yerleşim hedeflerini aşan altyazı blokları için `{cue, codes}` uyarıları (`long_word`, `short_duration`, `reading_speed`, `trailing_conjunction`). |
-
-Örnek JSON:
-
-```json
-{
-  "version": "0.1.0",
-  "language": "tr",
-  "duration": 7.2,
-  "device": "cpu",
-  "compute_type": "int8",
-  "cue_count": 3,
-  "confidence_threshold": 0.6,
-  "low_confidence_words": [
-    {
-      "start": 3.68,
-      "end": 4.1,
-      "text": "çünkü",
-      "prob": 0.55
-    }
-  ],
-  "layout_warnings": []
-}
+```sh
+altyazi-tr video.mp4 --model ./models/small -o rendered --format ass --burn --style docs/style.json --position middle
 ```
 
-## API özeti
+H.264 (`yuv420p`) ve AAC ses ile `rendered.burned.mp4` dosyası üretilir.
+
+### Modeli Tekrar Yüklemeden Yeniden Düzenleme
+
+Tanınan kelimeleri bir kez JSON olarak kaydedip, modeli yeniden çalıştırmadan saniyeler içinde farklı stiller ve satır kuralları deneyin:
+
+```sh
+# 1. Tanıma yapıp kelime zamanlamalarını kaydedin
+altyazi-tr video.mp4 --model ./models/small --save-words words.json -o captions
+
+# 2. Modeli yüklemeden farklı düzen ve stille milisaniyeler içinde üretin
+altyazi-tr --words-json words.json -o captions_v2 --format all --mode words --max-chars 14 --upper
+```
+
+### Python API'si
 
 ```python
 from altyazi_tr import LayoutConfig, Word, layout
 from altyazi_tr.writers import ass, srt, vtt
 
-# Tamamen uydurma cümle; model gerekmez.
 words = [Word(0.0, 0.4, "iyi", 0.95), Word(0.5, 1.0, "ışık", 0.90)]
 cues = layout(words, LayoutConfig(upper=True), duration=2.0)
+
 print(srt(cues))
-animated = ass(cues, karaoke=True)
-web_subtitles = vtt(cues)
+vtt_metin = vtt(cues)
+ass_karaoke = ass(cues, karaoke=True)
 ```
 
 | Giriş noktası | İşlev |
 | --- | --- |
-| `Word(start, end, text, prob)` | Doğrulanan, değişmez kelime; zaman saniye, olasılık 0–1 |
-| `Cue(start, end, lines)` | Değişmez altyazı bloğu; satırlar `Word` demetlerinden oluşur |
-| `layout(words, config, duration=None)` | Saf yerleşim; sırayı korur, çakışan kelimeleri reddeder |
-| `turkish_upper(text)` | Önce `i→İ`, `ı→I`, sonra Unicode büyük harf dönüşümü |
-| `layout_warnings(cues, config)` | Sağlanamayan koşulları bildirir |
-| `transcribe.transcribe(path, ...)` | Model, aygıt, hesap türü, dil ve VAD ayarlı yerel tanıma |
-| `style.load_style(path)` | Doğrulanan JSON/YAML ASS stili |
-| `writers.srt/vtt/ass(cues)` | Metin döndürür; dosyaya yazmayı çağıran yönetir |
-| `burn.burn(source, subtitles, output)` | ASS dosyasını yerel ffmpeg ile gömer; üzerine yazmaz |
+| `Word(start, end, text, prob)` | Doğrulanan, değişmez kelime nesnesi (saniye, 0–1 arası güven puanı). |
+| `Cue(start, end, lines)` | `Word` demetlerinden oluşan değişmez altyazı bloğu. |
+| `layout(words, config, duration=None)` | Saf yerleşim motoru; satır sınırları, bölmeler ve okuma hızını gözetir. |
+| `turkish_upper(text)` | Doğru Türkçe büyük harf çevrimi (`i→İ`, `ı→I`). |
+| `layout_warnings(cues, config)` | Sağlanamayan yerleşim kısıtlarını tespit eder. |
+| `transcribe.transcribe(path, ...)` | Çevrimdışı korumalı yerel faster-whisper ses tanıma. |
+| `style.load_style(path)` | JSON/YAML ASS stil dosyalarını okur ve doğrular. |
+| `writers.srt/vtt/ass(cues)` | Altyazı bloklarını standart metin biçimlerine dönüştürür. |
+| `burn.burn(source, subtitles, output)` | ASS altyazısını yerel ffmpeg ile videoya gömer. |
 
-`layout_warnings` fonksiyonunu doğrudan `altyazi_tr.layout` modülünden içe aktarın.
-Paketi içe aktarmak, tanıma kütüphanelerini veya modeli yüklemez. Tanıma katmanı
-boş ve sıfır süreli kelimeleri atlar, birden fazla kelime içeren parçaların süresini
-orantılı dağıtır; çakışan aralığın başlangıcını önceki kelimenin sonuna çeker.
-Saf API, önceden doğrulanmış ve zaman sırasındaki kelimeleri kabul eder. Son
-kelimeden sonra süre eklenmesini istemiyorsanız `duration` vermeyin. Hatalar
-İngilizcedir; CLI başarıda 0, işlem hatasında 1, argüman hatasında 2 döndürür.
+---
 
-## Model seçimi ve sınırlar
+## Yapılandırma
 
-Aşağıdaki ölçekler yaklaşık değerlerdir; bu projede yapılmış ölçümler değildir:
+### Yerleşim Parametreleri
 
-| Çok dilli model | Yaklaşık parametre | Göreli hız | Beklenen doğruluk farkı |
+| Seçenek | Varsayılan | Açıklama |
+| --- | :---: | --- |
+| `--mode {words,groups}` | `groups` | `groups` kelime öbekleri gösterir; `words` ASS'de her kelimeyi söylendiği anda renklendirir. |
+| `--max-chars` | `18` | Satır başına en fazla karakter (boşluk ve noktalama dahil). |
+| `--max-lines` | `2` | Altyazı bloğu başına en fazla satır (1–4 arası). |
+| `--pause-threshold` | `0.6` | Yeni bir blok açılmasını tetikleyen sessizlik süresi (saniye). |
+| `--min-duration` | `0.8` | Her altyazı bloğunun ekranda kalacağı en kısa süre (saniye). |
+| `--max-cps` | `18.0` | Saniyedeki en fazla karakter sayısı (okuma hızı hedefi). |
+| `--upper` | `False` | Altyazıları büyük harfe dönüştürür (`tr` ve `az` dillerinde noktalı/noktasız I kurallarını uygular). |
+
+### ASS Stil Yapılandırması
+
+Özel stiller JSON veya YAML dosyalarıyla tanımlanabilir (örnek: [`docs/style.json`](docs/style.json) ya da [`docs/style.yaml`](docs/style.yaml)):
+
+```json
+{
+  "font": "DejaVu Sans",
+  "font_size": 72,
+  "primary_color": "&H00FFFFFF",
+  "highlight_color": "&H0000FFFF",
+  "outline_color": "&H00000000",
+  "outline": 4.0,
+  "bold": true,
+  "position": "bottom",
+  "margin_v": 320
+}
+```
+
+- **Tuval**: 9:16 dikey video için 1080×1920 referans çözünürlüğü.
+- **Renkler**: ASS standardında `&HAABBGGRR` (onaltılık saydamlık, mavi, yeşil, kırmızı).
+- **Konum**: `bottom` (alttan `margin_v` piksel), `middle` (ortalanmış), `upper` (üstten `margin_v` piksel).
+
+### Çıkış Kodları
+
+| Çıkış kodu | Kategori | Açıklama |
+| :---: | --- | --- |
+| `0` | Başarılı | Altyazı blokları başarıyla üretildi ve dosyalara yazıldı. |
+| `1` | İşlem hatası | Dosya bulunamaması, boş/okunamayan ses, önbellekte olmayan model, dosya çakışması veya geçersiz ASS stili gibi çalışma zamanı hataları. |
+| `2` | Argüman hatası | Geçersiz komut satırı argümanları, tanınmayan seçenekler veya eksik zorunlu parametreler. |
+
+### Rapor JSON Şeması
+
+`--report json` seçeneğiyle `<ad>.report.json` oluşturulur ([`docs/examples/report.json`](docs/examples/report.json)):
+
+| Alan | Tür | Açıklama |
+| --- | --- | --- |
+| `version` | metin | Raporu üreten paket sürümü. |
+| `language` | metin | Tanımada kullanılan dil kodu. |
+| `duration` | ondalık sayı | Medya dosyasının süresi (son kelime bitişine göre sınırlandırılır). |
+| `device` | metin | Çıkarımda kullanılan donanım (`cpu`, `cuda` veya `none`). |
+| `compute_type` | metin | Sayısal duyarlık (`int8`, `float16` veya `none`). |
+| `cue_count` | tam sayı | Üretilen toplam altyazı bloğu sayısı. |
+| `confidence_threshold` | ondalık sayı | Düşük güvenli kelimeler için eşik değeri. |
+| `low_confidence_words` | dizi | Güven puanı eşiğin altında kalan `{start, end, text, prob}` kelime listesi. |
+| `layout_warnings` | dizi | Yerleşim hedeflerini aşan altyazı blokları için `{cue, codes}` uyarıları. |
+
+---
+
+## Sık Sorulan Sorular ve Sınırlar
+
+### Çevrimdışı Çalışma ve Model Edinme
+
+Paket kurulumu ve ilk model indirme internet gerektirir. Ancak bu CLI **ilk kullanımda bile kesinlikle internetten model indirmez**; daima `local_files_only=True` parametresiyle çalışır.
+
+`small` gibi adlandırılmış bir model önceden Hugging Face önbelleğinizde bulunmalı veya `--model /klasor/yolu` ile eksiksiz bir CTranslate2 model klasörü verilmelidir. Ayrıntılar için [faster-whisper model dönüştürme kılavuzuna](https://github.com/SYSTRAN/faster-whisper#model-conversion) bakın.
+
+### Model Ölçekleri ve Tercihler
+
+| Model | Yaklaşık Parametre | Göreli Hız | Beklenen Doğruluk Farkı |
 | --- | ---: | --- | --- |
-| tiny | 39M | En hızlı | Türkçede daha çok tanıma hatası |
-| base | 74M | Hızlı | Taslak için kullanılabilir |
-| small (varsayılan) | 244M | Orta | Başlangıç için makul seçim |
-| medium | 769M | Daha yavaş | Zorlu konuşmada çoğunlukla daha iyi |
-| large-v3 | 1.550M | Bu listedeki en yavaş | Çoğunlukla en güçlü; daha fazla bellek ister |
+| `tiny` | 39M | En hızlı | Türkçede daha çok tanıma hatası |
+| `base` | 74M | Hızlı | Taslak üretimler için uygun |
+| `small` (önerilen) | 244M | Orta | Türkçe konuşmalar için dengeli başlangıç |
+| `medium` | 769M | Daha yavaş | Gürültülü ortamlarda daha güçlü doğruluk |
+| `large-v3` | 1.550M | En yavaş | En yüksek doğruluk; daha çok VRAM / RAM ister |
 
-Hız, bellek ve doğruluk; donanıma, hesap türüne, gürültüye, konuşmaya ve dile göre
-değişir. Tablo genel beklentiyi gösterir; Türkçe başarım testi veya garanti değildir.
-[Ana projenin model listesine](https://github.com/openai/whisper#available-models-and-languages)
-bakabilirsiniz. Konuşmacı ayrımı, çeviri, zorunlu hizalama ve videoyu yeniden
-kadrajlama yoktur. Müzik, üst üste konuşma, sessizlik ve noktalama; hatalara veya
-olmayan sözlerin üretilmesine yol açabilir. Yayınlamadan önce metni ve zamanlamayı
-kontrol edin. SRT/VTT, ASS stillerini korumaz. ASS zamanları saniyenin yüzde biri
-hassasiyetindedir; daha kısa olaylar yuvarlamada kaybolabilir. Girdi medyasının
-üzerine yazılmaz. Paket kodu ağ çağrısı yapmaz; kurulum ve dışarıdan model edinme
-ayrı çevrim içi adımlardır.
+### CPU, GPU ve Donanım Hızlandırma
 
-## Katkı
+- `--device auto`: CTranslate2 uygun GPU bulursa CUDA'yı seçer; aksi halde CPU int8 ile çalışır. CUDA çalışma zamanında hata verirse otomatik olarak CPU int8 ile yeniden dener.
+- `--device cpu`: GPU bağımlılıklarını devre dışı bırakır ve CPU kullanır.
+- `--compute-type`: Varsayılan sayı duyarlığını değiştirir (CPU'da `int8`, CUDA'da `float16`).
 
-Kurulum, çevrimdışı testler, lint/tip denetimleri ve commit öncesi sır taraması
-için [CONTRIBUTING.md](CONTRIBUTING.md) dosyasına bakın. CI; Linux ve Windows'ta
-Python 3.10 ve 3.12 ile modelsiz çalışır. `python -m pytest -m slow`, isteğe bağlı
-yerel model testini seçer. Depoda model veya gerçek kayıt yoktur. Örnekleri yapay
-tutun; iki README aynı bilgiyi taşısın. Lisans: [MIT](LICENSE).
+### Bilinen Sınırlar
+
+- **Konuşmacı Ayrımı ve Çeviri Yoktur**: Çoklu konuşmacıları ayırt etmez veya diller arası çeviri yapmaz.
+- **Arka Plan Müziği**: Yüksek sesli müzik veya şarkı sözleri Whisper modelinde zaman kaymasına ya da tekrarlara yol açabilir.
+- **Video Gömme Gereksinimi**: Altyazı gömme (`--burn`) için sistemde `libass` destekli ffmpeg bulunmalıdır.
+- **En Boy Oranı**: Varsayılan tuval 1080×1920 (9:16 dikey) formatındadır. Yatay videolar için stil dosyasını uyarlayın.
+
+---
+
+## Katkıda Bulunma
+
+Katkılarınızı bekliyoruz! Geliştirme ortamı kurulumu, çevrimdışı testler, lint/tip denetimleri ve güvenlik kuralları için lütfen [CONTRIBUTING.md](CONTRIBUTING.md) belgesini inceleyin.
+
+```sh
+# Çevrimdışı test paketini kapsam raporuyla çalıştırın
+python -m pytest
+
+# Kod denetleyici ve katı tip kontrolünü çalıştırın
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy
+```
+
+Tüm katkılar çevrimdışı çalışma ve gizlilik kurallarını korumalıdır.
+
+---
+
+## Lisans
+
+Bu proje [MIT Lisansı](LICENSE) kapsamında sunulmaktadır.

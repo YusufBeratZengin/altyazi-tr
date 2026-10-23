@@ -18,7 +18,13 @@ class ExamplesTests(unittest.TestCase):
             tmp_path = Path(tmp)
             generate(tmp_path)
 
-            for filename in ("sample.srt", "sample.vtt", "sample.ass", "report.json"):
+            for filename in (
+                "sample.srt",
+                "sample.vtt",
+                "sample.ass",
+                "report.json",
+                "sample.words.json",
+            ):
                 with self.subTest(file=filename):
                     expected = (examples_dir / filename).read_text(encoding="utf-8")
                     actual = (tmp_path / filename).read_text(encoding="utf-8")
