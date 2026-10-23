@@ -120,3 +120,87 @@ class CLIWordsTests(unittest.TestCase):
             self.assertEqual(code2, 0)
             srt_content = (Path(folder) / "reout.srt").read_text(encoding="utf-8")
             self.assertIn("İYİ IŞIK", srt_content)
+
+    def test_words_json_validation_errors(self) -> None:
+        from altyazi_tr.cli import _load_words_json
+
+        with self.assertRaises(ValueError):
+            _load_words_json(Path("definitely_nonexistent_file.json"))
+
+        with tempfile.TemporaryDirectory(prefix="altyazi-words-err-") as folder:
+            root = Path(folder)
+
+            # 1. Non-existent file
+            missing = root / "nonexistent.json"
+            code = main(["--words-json", str(missing), "-o", str(root / "out")])
+            self.assertEqual(code, 1)
+
+            # 2. Corrupt / invalid JSON
+            bad_json = root / "bad.json"
+            bad_json.write_text("{ broken json", encoding="utf-8")
+            code = main(["--words-json", str(bad_json), "-o", str(root / "out1")])
+            self.assertEqual(code, 1)
+
+            # 3. Not a list
+            not_list = root / "not_list.json"
+            not_list.write_text('{"start": 0}', encoding="utf-8")
+            code = main(["--words-json", str(not_list), "-o", str(root / "out2")])
+            self.assertEqual(code, 1)
+
+            # 4. Item not an object
+            not_obj = root / "not_obj.json"
+            not_obj.write_text('["hello"]', encoding="utf-8")
+            code = main(["--words-json", str(not_obj), "-o", str(root / "out3")])
+            self.assertEqual(code, 1)
+
+            # 5. Invalid word values
+            bad_item = root / "bad_item.json"
+            bad_item.write_text('[{"start": "not-a-float"}]', encoding="utf-8")
+            code = main(["--words-json", str(bad_item), "-o", str(root / "out4")])
+            self.assertEqual(code, 1)
+
+    def test_burn_requires_input_media(self) -> None:
+        words_data = [{"start": 0.0, "end": 0.5, "text": "test", "prob": 0.99}]
+        with tempfile.TemporaryDirectory(prefix="altyazi-burn-words-") as folder:
+            words_file = Path(folder) / "words.json"
+            words_file.write_text(json.dumps(words_data), encoding="utf-8")
+
+            code = main(
+                [
+                    "--words-json",
+                    str(words_file),
+                    "--burn",
+                    "-o",
+                    str(Path(folder) / "out"),
+                ]
+            )
+            self.assertEqual(code, 1)
+
+    def test_cli_warning_on_exceeded_targets(self) -> None:
+        # A 12-char word with max_chars=4 triggers long_word warning
+        words_data = [{"start": 0.0, "end": 0.5, "text": "uzunbirkelime", "prob": 0.99}]
+        with tempfile.TemporaryDirectory(prefix="altyazi-warn-") as folder:
+            words_file = Path(folder) / "words.json"
+            words_file.write_text(json.dumps(words_data), encoding="utf-8")
+
+            with patch("sys.stderr.write") as mock_err:
+                code = main(
+                    [
+                        "--words-json",
+                        str(words_file),
+                        "--max-chars",
+                        "4",
+                        "-o",
+                        str(Path(folder) / "out"),
+                    ]
+                )
+                self.assertEqual(code, 0)
+                stderr_output = "".join(call[0][0] for call in mock_err.call_args_list)
+                self.assertIn("Warning: 1 cues exceed layout targets", stderr_output)
+
+    def test_main_module_execution(self) -> None:
+        import runpy
+
+        with patch("sys.argv", ["altyazi-tr", "--version"]), self.assertRaises(SystemExit) as cm:
+            runpy.run_module("altyazi_tr", run_name="__main__")
+        self.assertEqual(cm.exception.code, 0)
