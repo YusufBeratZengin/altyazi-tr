@@ -68,3 +68,28 @@ class ExamplesTests(unittest.TestCase):
             "layout_warnings": layout_warnings(cues, config),
         }
         self.assertEqual(set(data.keys()), set(cli_emitted_report.keys()))
+
+    def test_demo_svg_structure_and_regeneration(self) -> None:
+        import subprocess
+        import sys
+
+        demo_svg_path = Path("docs/demo.svg")
+        self.assertTrue(demo_svg_path.is_file(), "docs/demo.svg must exist.")
+        content = demo_svg_path.read_text(encoding="utf-8")
+
+        self.assertIn("<svg", content)
+        self.assertIn("viewBox=", content)
+        self.assertIn("altyazi-tr", content)
+        self.assertIn("--help", content)
+        # Verify 3 window dots
+        self.assertIn("#ff5f56", content)
+        self.assertIn("#ffbd2e", content)
+        self.assertIn("#27c93f", content)
+
+        # Verify scripts/make-demo.py runs cleanly
+        res = subprocess.run(
+            [sys.executable, "scripts/make-demo.py"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0, f"make-demo.py failed: {res.stderr}")
