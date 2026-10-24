@@ -1,5 +1,15 @@
 # altyazi-tr
 
+> **[subtitle-tools](https://github.com/YusufBeratZengin/subtitle-tools) projesine taşındı.**
+> altyazi-tr artık subtitle-tools içinde `subtool transcribe` komutu olarak, aynı
+> seçeneklerle sürüyor. Yeni geliştirmeler orada; bu depo başvuru için duruyor.
+> subtitle-tools PyPI'a çıkana kadar onun klonunda `pip install -e ".[transcribe]"` çalıştırın.
+>
+> ```sh
+> pip install "subtitle-tools[transcribe]"
+> subtool transcribe video.mp4 --model ./models/small -o captions --format all
+> ```
+
 Kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime zamanlı Türkçe altyazı üretimi.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)

@@ -1,5 +1,15 @@
 # altyazi-tr
 
+> **Moved to [subtitle-tools](https://github.com/YusufBeratZengin/subtitle-tools).**
+> altyazi-tr is now part of subtitle-tools as `subtool transcribe`, with the same
+> options. New work happens there; this repository is kept for reference.
+> Until subtitle-tools is on PyPI, run `pip install -e ".[transcribe]"` in its clone.
+>
+> ```sh
+> pip install "subtitle-tools[transcribe]"
+> subtool transcribe video.mp4 --model ./models/small -o captions --format all
+> ```
+
 Offline, word-timed Turkish subtitles for short vertical videos using faster-whisper.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
