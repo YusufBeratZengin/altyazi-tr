@@ -3,7 +3,6 @@
 Kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime zamanlı Türkçe altyazı üretimi.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
-[![PyPI sürümü](https://img.shields.io/pypi/v/altyazi-tr.svg)](https://pypi.org/project/altyazi-tr/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![Lisans: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -25,7 +24,13 @@ Kısa dikey videolar için faster-whisper kullanarak çevrimdışı ve kelime za
 
 Python 3.10 veya üstü gerekir.
 
+**Henüz PyPI'de yayımlanmadı.** Bu depoyu klonlayın ve depo klasöründen
+`python -m pip install .` ile kurun:
+
 ```sh
+git clone https://github.com/YusufBeratZengin/altyazi-tr.git
+cd altyazi-tr
+
 # Sanal ortam oluşturun ve etkinleştirin
 python -m venv .venv
 
@@ -34,8 +39,8 @@ source .venv/bin/activate
 # Windows PowerShell:
 # .venv\Scripts\Activate.ps1
 
-# Temel paketi kurun
-python -m pip install altyazi-tr
+# Temel paketi depo klasöründen kurun
+python -m pip install .
 
 # Veya depodan video gömme ve YAML desteğiyle kurun:
 python -m pip install ".[ffmpeg,yaml]"

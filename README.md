@@ -3,7 +3,6 @@
 Offline, word-timed Turkish subtitles for short vertical videos using faster-whisper.
 
 [![CI](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml/badge.svg)](https://github.com/YusufBeratZengin/altyazi-tr/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/altyazi-tr.svg)](https://pypi.org/project/altyazi-tr/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -25,7 +24,13 @@ Offline, word-timed Turkish subtitles for short vertical videos using faster-whi
 
 Python 3.10 or newer is required.
 
+**Not on PyPI yet.** Clone this repository and install from the checkout with
+`python -m pip install .`:
+
 ```sh
+git clone https://github.com/YusufBeratZengin/altyazi-tr.git
+cd altyazi-tr
+
 # Create and activate virtual environment
 python -m venv .venv
 
@@ -34,8 +39,8 @@ source .venv/bin/activate
 # Windows PowerShell:
 # .venv\Scripts\Activate.ps1
 
-# Install core package
-python -m pip install altyazi-tr
+# Install core package from the checkout
+python -m pip install .
 
 # Or with burning and YAML support from checkout:
 python -m pip install ".[ffmpeg,yaml]"

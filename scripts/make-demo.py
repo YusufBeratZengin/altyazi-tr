@@ -3,56 +3,64 @@
 from __future__ import annotations
 
 import html
-import re
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+DEMO_ARGS = [
+    "--words-json",
+    "docs/examples/sample.words.json",
+    "-o",
+    "captions",
+    "--format",
+    "all",
+    "--mode",
+    "words",
+    "--upper",
+]
 
-def capture_help_output() -> list[str]:
-    """Run CLI to capture real output and trim to ~18-20 lines."""
-    cmd = [sys.executable, "-m", "altyazi_tr", "--help"]
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    raw_lines = result.stdout.strip().splitlines()
 
-    # Capture real lines: usage summary, description, and key options
-    selected: list[str] = []
-
-    # 1. First 4 lines of usage
-    selected.extend(raw_lines[:4])
-    selected.append("                  [--burn] [--upper] [--report {json}] [input]")
-    selected.append("")
-    selected.append(raw_lines[12])  # "Create offline, word-timed subtitles from local media."
-    selected.append("")
-    selected.append("options:")
-
-    # Key options from real output
-    key_options = [
-        "-h, --help",
-        "-o, --output",
-        "--format",
-        "--model",
-        "--mode",
-        "--upper",
-        "--burn",
-        "--style",
-        "--report",
-        "--words-json",
-    ]
-
-    for line in raw_lines[18:]:
-        stripped = line.strip()
-        for opt in key_options:
-            if stripped.startswith(opt):
-                selected.append(line)
-                break
-
-    return selected
+def capture_demo_output() -> list[str]:
+    """Run the documented command and read its generated SRT, without a model."""
+    work_dir = ROOT / "is"
+    work_dir.mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="demo-", dir=work_dir) as tmp:
+        workspace = Path(tmp)
+        fixture = workspace / "docs/examples/sample.words.json"
+        fixture.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / "docs/examples/sample.words.json", fixture)
+        env = os.environ.copy()
+        env["PYTHONPATH"] = str(ROOT / "src")
+        env["HF_HUB_OFFLINE"] = "1"
+        env["HF_HUB_DISABLE_TELEMETRY"] = "1"
+        result = subprocess.run(
+            [sys.executable, "-m", "altyazi_tr", *DEMO_ARGS],
+            cwd=workspace,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            check=True,
+        )
+        srt = (workspace / "captions.srt").read_text(encoding="utf-8")
+        excerpt = "\n\n".join(srt.strip().split("\n\n")[:3])
+        return [
+            "$ altyazi-tr " + " ".join(DEMO_ARGS),
+            *result.stdout.strip().splitlines(),
+            "",
+            "# captions.srt (first 3 cues)",
+            *excerpt.splitlines(),
+        ]
 
 
 def build_svg(lines: list[str]) -> str:
     """Render terminal lines into an SVG with dark background, rounded window, and 3 dots."""
-    width = 820
+    width = max(820, 48 + max(len(line) for line in lines) * 8)
     header_height = 40
     padding_x = 24
     padding_top = 68
@@ -60,49 +68,24 @@ def build_svg(lines: list[str]) -> str:
     font_size = 13
 
     # Total height: header + content + bottom padding
-    total_lines = len(lines) + 1  # +1 for prompt line
+    total_lines = len(lines)
     height = padding_top + (total_lines * line_height) + 16
 
     content_spans: list[str] = []
 
-    # Command prompt line
-    prompt_y = padding_top
-    content_spans.append(
-        f'  <text x="{padding_x}" y="{prompt_y}">'
-        f'<tspan fill="#3fb950" font-weight="bold">$ </tspan>'
-        f'<tspan fill="#f0f6fc" font-weight="bold">altyazi-tr </tspan>'
-        f'<tspan fill="#79c0ff">--help</tspan>'
-        f"</text>"
-    )
-
-    for i, line in enumerate(lines, 1):
+    for i, line in enumerate(lines):
         y = padding_top + (i * line_height)
         if not line.strip():
             continue
 
         escaped = html.escape(line)
 
-        if line.startswith("usage:"):
-            styled = (
-                f'<tspan fill="#ff7b72" font-weight="bold">usage: </tspan>'
-                f'<tspan fill="#c9d1d9">{html.escape(line[len("usage:") :])}</tspan>'
-            )
-        elif line.startswith("positional arguments:") or line.startswith("options:"):
-            styled = f'<tspan fill="#d2a8ff" font-weight="bold">{escaped}</tspan>'
-        elif line.strip().startswith("-"):
-            # Option flag and description
-            indent = " " * (len(line) - len(line.lstrip()))
-            parts = re.split(r"\s{2,}", line.strip(), maxsplit=1)
-            flag = html.escape(indent + parts[0])
-            desc = html.escape("   " + parts[1]) if len(parts) > 1 else ""
-            styled = (
-                f'<tspan fill="#79c0ff" font-weight="500">{flag}</tspan>'
-                f'<tspan fill="#8b949e">{desc}</tspan>'
-            )
-        elif line.startswith("                  "):
+        if line.startswith("$ "):
+            styled = f'<tspan fill="#3fb950" font-weight="bold">{escaped}</tspan>'
+        elif line.startswith("# "):
             styled = f'<tspan fill="#8b949e">{escaped}</tspan>'
-        elif "Create offline" in line:
-            styled = f'<tspan fill="#a5d6ff" font-weight="500">{escaped}</tspan>'
+        elif " --> " in line:
+            styled = f'<tspan fill="#79c0ff">{escaped}</tspan>'
         else:
             styled = f'<tspan fill="#c9d1d9">{escaped}</tspan>'
 
@@ -114,7 +97,8 @@ def build_svg(lines: list[str]) -> str:
 
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
-        f'width="{width}" height="{height}" role="img" aria-label="altyazi-tr CLI demo">\n'
+        f'width="{width}" height="{height}" role="img" '
+        f'aria-label="altyazi-tr: real CLI output and generated SRT cues">\n'
         f"  <defs>\n"
         f'    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">\n'
         f'      <feDropShadow dx="0" dy="6" stdDeviation="12" '
@@ -150,12 +134,12 @@ def build_svg(lines: list[str]) -> str:
 
 
 def main() -> int:
-    dest = Path("docs/demo.svg")
+    dest = ROOT / "docs/demo.svg"
     dest.parent.mkdir(parents=True, exist_ok=True)
-    lines = capture_help_output()
+    lines = capture_demo_output()
     svg = build_svg(lines)
     dest.write_text(svg, encoding="utf-8", newline="\n")
-    print(f"Generated {dest} ({len(lines) + 1} terminal lines)")
+    print(f"Generated {dest.relative_to(ROOT)} ({len(lines)} terminal lines)")
     return 0
 
 

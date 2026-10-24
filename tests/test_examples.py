@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from dataclasses import asdict
 from pathlib import Path
 
@@ -86,7 +87,20 @@ class ExamplesTests(unittest.TestCase):
         self.assertIn("<svg", content)
         self.assertIn("viewBox=", content)
         self.assertIn("altyazi-tr", content)
-        self.assertIn("--help", content)
+        self.assertIn(
+            "altyazi-tr --words-json docs/examples/sample.words.json"
+            " -o captions --format all --mode words --upper",
+            content,
+        )
+        self.assertNotIn("--help", content)
+        terminal_lines = [
+            "".join(node.itertext())
+            for node in ET.fromstring(content).findall(".//{http://www.w3.org/2000/svg}text")
+        ]
+        expected_srt = Path("docs/examples/sample.srt").read_text(encoding="utf-8")
+        for line in expected_srt.splitlines():
+            if line:
+                self.assertIn(line, terminal_lines)
         # Verify 3 window dots
         self.assertIn("#ff5f56", content)
         self.assertIn("#ffbd2e", content)
@@ -99,3 +113,4 @@ class ExamplesTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(res.returncode, 0, f"make-demo.py failed: {res.stderr}")
+        self.assertEqual(demo_svg_path.read_text(encoding="utf-8"), content)
